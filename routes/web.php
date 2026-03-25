@@ -8,6 +8,12 @@ Route::get('/', function () {
 });
 
 Route::post('/webhook', function (Nutgram $bot) {
-    $bot->run();
+    try {
+        \Log::info('Webhook hit', ['update' => file_get_contents('php://input')]);
+        $bot->run();
+        \Log::info('Webhook processed successfully');
+    } catch (\Throwable $e) {
+        \Log::error('Webhook error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+    }
     return response('ok');
 });

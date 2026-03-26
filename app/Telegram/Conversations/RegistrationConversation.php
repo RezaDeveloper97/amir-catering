@@ -15,7 +15,7 @@ class RegistrationConversation extends Conversation
     {
         $bot->sendMessage(
             text: "📍 لطفاً آدرس خود را وارد کنید:",
-            reply_markup: ReplyKeyboardRemove::make(),
+            reply_markup: ReplyKeyboardRemove::make(remove_keyboard: true),
         );
         $this->next('handleAddress');
     }

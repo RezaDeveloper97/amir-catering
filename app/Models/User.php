@@ -16,13 +16,6 @@ class User extends Model
         'longitude' => 'decimal:7',
     ];
 
-    protected static function booted(): void
-    {
-        static::saved(function (User $user) {
-            cache()->forget("user:{$user->telegram_id}");
-        });
-    }
-
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);

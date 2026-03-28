@@ -103,6 +103,14 @@ return [
     'price_error' => '❌ قیمت باید عدد مثبت باشد.',
     'item_added' => "✅ «:name» با قیمت :price RM به :category اضافه شد!\n\nبرای مدیریت: /admin",
 
+    // Admin - Edit category/item
+    'btn_edit_category' => '✏️ ویرایش دسته‌بندی',
+    'btn_edit_item' => '✏️ ویرایش آیتم',
+    'edit_category_prompt' => "✏️ نام جدید دسته‌بندی «:name» را به ۳ زبان بفرستید:\n<b>فارسی | English | Melayu</b>\n\n(برای لغو /cancel بزنید)",
+    'edit_item_prompt' => "✏️ نام و قیمت جدید «:name» را بفرستید:\n<b>فارسی | English | Melayu - قیمت</b>\n\n(برای لغو /cancel بزنید)",
+    'category_updated' => '✅ دسته‌بندی «:name» ویرایش شد!',
+    'item_updated' => '✅ «:name» با قیمت :price RM ویرایش شد!',
+
     // Admin panel
     'admin_panel_title' => "⚙️ پنل مدیریت\n\nیک بخش انتخاب کنید:",
 

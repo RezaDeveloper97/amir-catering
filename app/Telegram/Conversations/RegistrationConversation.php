@@ -99,7 +99,7 @@ class RegistrationConversation extends Conversation
 
         $bot->sendMessage(
             text: "✅ ثبت نام شما با موفقیت تکمیل شد!\n\nبه امیر کترینگ خوش آمدید 🎉",
-            reply_markup: mainMenuKeyboard(),
+            reply_markup: mainMenuKeyboard($user),
         );
         $this->end();
     }

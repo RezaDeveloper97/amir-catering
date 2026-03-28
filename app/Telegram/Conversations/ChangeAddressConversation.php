@@ -63,7 +63,7 @@ class ChangeAddressConversation extends Conversation
 
         $bot->sendMessage(
             text: "✅ آدرس شما با موفقیت تغییر کرد!",
-            reply_markup: mainMenuKeyboard(),
+            reply_markup: mainMenuKeyboard($user),
         );
         $this->end();
     }

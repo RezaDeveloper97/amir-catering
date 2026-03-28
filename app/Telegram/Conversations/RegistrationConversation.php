@@ -13,8 +13,10 @@ class RegistrationConversation extends Conversation
 {
     public function start(Nutgram $bot): void
     {
+        $user = User::where('telegram_id', $bot->userId())->first();
+
         $bot->sendMessage(
-            text: "📍 لطفاً آدرس خود را وارد کنید:",
+            text: trans_user('reg_enter_address', $user),
             reply_markup: ReplyKeyboardRemove::make(remove_keyboard: true),
         );
         $this->next('handleAddress');
@@ -23,21 +25,21 @@ class RegistrationConversation extends Conversation
     public function handleAddress(Nutgram $bot): void
     {
         $address = $bot->message()?->text;
+        $user = User::where('telegram_id', $bot->userId())->first();
 
         if (empty($address)) {
-            $bot->sendMessage("❌ لطفاً آدرس خود را به صورت متنی وارد کنید:");
+            $bot->sendMessage(trans_user('reg_address_text_only', $user));
             $this->next('handleAddress');
             return;
         }
 
-        $user = User::where('telegram_id', $bot->userId())->first();
         $user?->update(['address' => $address]);
 
         $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true, one_time_keyboard: true)
-            ->addRow(KeyboardButton::make('📍 ارسال لوکیشن', request_location: true));
+            ->addRow(KeyboardButton::make(trans_user('btn_send_location', $user), request_location: true));
 
         $bot->sendMessage(
-            text: "📍 حالا لطفاً لوکیشن خود را ارسال کنید:",
+            text: trans_user('reg_send_location', $user),
             reply_markup: $keyboard,
         );
         $this->next('handleLocation');
@@ -46,30 +48,30 @@ class RegistrationConversation extends Conversation
     public function handleLocation(Nutgram $bot): void
     {
         $location = $bot->message()?->location;
+        $user = User::where('telegram_id', $bot->userId())->first();
 
         if ($location === null) {
             $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true, one_time_keyboard: true)
-                ->addRow(KeyboardButton::make('📍 ارسال لوکیشن', request_location: true));
+                ->addRow(KeyboardButton::make(trans_user('btn_send_location', $user), request_location: true));
 
             $bot->sendMessage(
-                text: "❌ لطفاً از دکمه زیر برای ارسال لوکیشن استفاده کنید:",
+                text: trans_user('reg_use_location_button', $user),
                 reply_markup: $keyboard,
             );
             $this->next('handleLocation');
             return;
         }
 
-        $user = User::where('telegram_id', $bot->userId())->first();
         $user?->update([
             'latitude' => $location->latitude,
             'longitude' => $location->longitude,
         ]);
 
         $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true, one_time_keyboard: true)
-            ->addRow(KeyboardButton::make('📱 ارسال شماره موبایل', request_contact: true));
+            ->addRow(KeyboardButton::make(trans_user('btn_send_phone', $user), request_contact: true));
 
         $bot->sendMessage(
-            text: "📱 لطفاً شماره موبایل خود را ارسال کنید:",
+            text: trans_user('reg_send_phone', $user),
             reply_markup: $keyboard,
         );
         $this->next('handlePhone');
@@ -78,27 +80,27 @@ class RegistrationConversation extends Conversation
     public function handlePhone(Nutgram $bot): void
     {
         $contact = $bot->message()?->contact;
+        $user = User::where('telegram_id', $bot->userId())->first();
 
         if ($contact === null) {
             $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true, one_time_keyboard: true)
-                ->addRow(KeyboardButton::make('📱 ارسال شماره موبایل', request_contact: true));
+                ->addRow(KeyboardButton::make(trans_user('btn_send_phone', $user), request_contact: true));
 
             $bot->sendMessage(
-                text: "❌ لطفاً از دکمه زیر برای ارسال شماره موبایل استفاده کنید:",
+                text: trans_user('reg_use_phone_button', $user),
                 reply_markup: $keyboard,
             );
             $this->next('handlePhone');
             return;
         }
 
-        $user = User::where('telegram_id', $bot->userId())->first();
         $user?->update([
             'phone' => $contact->phone_number,
             'is_registered' => true,
         ]);
 
         $bot->sendMessage(
-            text: "✅ ثبت نام شما با موفقیت تکمیل شد!\n\nبه امیر کترینگ خوش آمدید 🎉",
+            text: trans_user('reg_complete', $user),
             reply_markup: mainMenuKeyboard($user),
         );
         $this->end();

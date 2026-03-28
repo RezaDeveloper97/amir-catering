@@ -94,11 +94,12 @@ return [
     'btn_delete_item' => '🗑 حذف آیتم',
 
     // Admin - Add category/item
-    'add_category_prompt' => "📂 نام دسته‌بندی جدید را بفرستید:\n\n(برای لغو /cancel بزنید)",
-    'add_item_prompt' => "🍽 نام و قیمت آیتم جدید را به این فرمت بفرستید:\n\n<b>نام آیتم - قیمت</b>\n\nمثال: چلو کباب - 25.00\n\n(برای لغو /cancel بزنید)",
+    'add_category_prompt' => "📂 نام دسته‌بندی جدید را به ۳ زبان بفرستید:\n<b>فارسی | English | Melayu</b>\n\nمثال: نوشیدنی | Beverages | Minuman\n\n(برای لغو /cancel بزنید)",
+    'add_item_prompt' => "🍽 نام آیتم جدید را به ۳ زبان و قیمت بفرستید:\n<b>فارسی | English | Melayu - قیمت</b>\n\nمثال: چلو کباب | Chelo Kabab | Chelo Kabab - 25.00\n\n(برای لغو /cancel بزنید)",
     'category_added' => "✅ دسته‌بندی «:name» اضافه شد!\n\nبرای مدیریت: /admin",
     'category_not_found_err' => '❌ دسته‌بندی یافت نشد.',
-    'format_error' => "❌ فرمت اشتباه. لطفاً به فرمت زیر بفرستید:\nنام آیتم - قیمت\n\nمثال: چلو کباب - 25.00",
+    'format_error_category' => "❌ فرمت اشتباه. لطفاً به فرمت زیر بفرستید:\nفارسی | English | Melayu\n\nمثال: نوشیدنی | Beverages | Minuman",
+    'format_error_item' => "❌ فرمت اشتباه. لطفاً به فرمت زیر بفرستید:\nفارسی | English | Melayu - قیمت\n\nمثال: چلو کباب | Chelo Kabab | Chelo Kabab - 25.00",
     'price_error' => '❌ قیمت باید عدد مثبت باشد.',
     'item_added' => "✅ «:name» با قیمت :price RM به :category اضافه شد!\n\nبرای مدیریت: /admin",
 

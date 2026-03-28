@@ -189,7 +189,7 @@ $bot->onText('(📂 مدیریت دسته‌بندی‌ها|📂 Manage Categori
     foreach ($categories as $cat) {
         $status = $cat->is_active ? '✅' : '❌';
         $keyboard->addRow(
-            InlineKeyboardButton::make(text: "{$status} {$cat->name}", callback_data: "admin_cat:{$cat->id}"),
+            InlineKeyboardButton::make(text: "{$status} {$cat->localizedName($user)}", callback_data: "admin_cat:{$cat->id}"),
         );
     }
 
@@ -207,7 +207,7 @@ $bot->onText('(🍽 مدیریت آیتم‌ها|🍽 Manage Items|🍽 Urus Ite
 
     foreach ($categories as $cat) {
         $keyboard->addRow(InlineKeyboardButton::make(
-            text: "📂 {$cat->name}",
+            text: "📂 {$cat->localizedName($user)}",
             callback_data: "admin_catitems:{$cat->id}",
         ));
     }
@@ -238,7 +238,7 @@ $bot->onText('(📋 سفارشات من|📋 My Orders|📋 Pesanan Saya)', func
         $text .= trans_user('order_line', $user, ['id' => $order->id, 'date' => $order->created_at->format('Y/m/d H:i')]);
         foreach ($order->items as $item) {
             $text .= trans_user('order_item_line', $user, [
-                'name' => $item->item_name,
+                'name' => $item->localizedItemName($user),
                 'qty' => $item->quantity,
                 'subtotal' => number_format($item->price * $item->quantity, 2),
             ]);
@@ -286,7 +286,7 @@ $bot->onCallbackQueryData('category:{id}', function (Nutgram $bot, string $id) {
     foreach ($category->items as $item) {
         $keyboard->addRow(
             InlineKeyboardButton::make(
-                text: "🔵 {$item->name} - " . number_format($item->price, 2) . " RM",
+                text: "🔵 {$item->localizedName($user)} - " . number_format($item->price, 2) . " RM",
                 callback_data: "item:{$item->id}",
             ),
         );
@@ -297,7 +297,7 @@ $bot->onCallbackQueryData('category:{id}', function (Nutgram $bot, string $id) {
     );
 
     $bot->editMessageText(
-        text: trans_user('select_item', $user, ['name' => $category->name]),
+        text: trans_user('select_item', $user, ['name' => $category->localizedName($user)]),
         reply_markup: $keyboard,
     );
     $bot->answerCallbackQuery();
@@ -329,7 +329,7 @@ $bot->onCallbackQueryData('item:{id}', function (Nutgram $bot, string $id) {
     );
 
     $bot->editMessageText(
-        text: trans_user('item_detail', $user, ['name' => $item->name, 'price' => number_format($item->price, 2)]),
+        text: trans_user('item_detail', $user, ['name' => $item->localizedName($user), 'price' => number_format($item->price, 2)]),
         reply_markup: $keyboard,
     );
     $bot->answerCallbackQuery();
@@ -351,8 +351,8 @@ $bot->onCallbackQueryData('qty:{itemId}:{quantity}', function (Nutgram $bot, str
     );
 
     $orderItem = OrderItem::where('order_id', $order->id)
-        ->where('item_name', $item->name)
-        ->where('category', $item->category->name)
+        ->where('item_name_fa', $item->name_fa)
+        ->where('category_fa', $item->category->name_fa)
         ->first();
 
     if ($orderItem) {
@@ -360,8 +360,12 @@ $bot->onCallbackQueryData('qty:{itemId}:{quantity}', function (Nutgram $bot, str
     } else {
         OrderItem::create([
             'order_id' => $order->id,
-            'item_name' => $item->name,
-            'category' => $item->category->name,
+            'item_name_fa' => $item->name_fa,
+            'item_name_en' => $item->name_en,
+            'item_name_ms' => $item->name_ms,
+            'category_fa' => $item->category->name_fa,
+            'category_en' => $item->category->name_en,
+            'category_ms' => $item->category->name_ms,
             'price' => $item->price,
             'quantity' => (int)$quantity,
         ]);
@@ -382,7 +386,7 @@ $bot->onCallbackQueryData('qty:{itemId}:{quantity}', function (Nutgram $bot, str
     );
 
     $bot->editMessageText(
-        text: trans_user('added_to_cart', $user, ['name' => $item->name, 'qty' => $quantity, 'total' => number_format($total, 2)]),
+        text: trans_user('added_to_cart', $user, ['name' => $item->localizedName($user), 'qty' => $quantity, 'total' => number_format($total, 2)]),
         reply_markup: $keyboard,
     );
     $bot->answerCallbackQuery(text: trans_user('added_toast', $user));
@@ -396,7 +400,7 @@ $bot->onCallbackQueryData('back_to_categories', function (Nutgram $bot) {
 
     foreach ($categories as $category) {
         $keyboard->addRow(
-            InlineKeyboardButton::make(text: "🔵 {$category->name}", callback_data: "category:{$category->id}"),
+            InlineKeyboardButton::make(text: "🔵 {$category->localizedName($user)}", callback_data: "category:{$category->id}"),
         );
     }
 
@@ -431,7 +435,7 @@ $bot->onCallbackQueryData('view_cart', function (Nutgram $bot) {
     $text = trans_user('cart_contents', $user);
     foreach ($cart->items as $item) {
         $subtotal = $item->price * $item->quantity;
-        $text .= "• {$item->item_name} × {$item->quantity} = " . number_format($subtotal, 2) . " RM\n";
+        $text .= "• {$item->localizedItemName($user)} × {$item->quantity} = " . number_format($subtotal, 2) . " RM\n";
     }
     $text .= trans_user('cart_total', $user, ['total' => number_format($cart->total_price, 2)]);
 
@@ -505,7 +509,7 @@ $bot->onCallbackQueryData('place_order', function (Nutgram $bot) {
     $text .= trans_user('order_number', $user, ['id' => $cart->id]);
     foreach ($cart->items as $item) {
         $subtotal = $item->price * $item->quantity;
-        $text .= "• {$item->item_name} × {$item->quantity} = " . number_format($subtotal, 2) . " RM\n";
+        $text .= "• {$item->localizedItemName($user)} × {$item->quantity} = " . number_format($subtotal, 2) . " RM\n";
     }
     $text .= trans_user('cart_total', $user, ['total' => number_format($cart->total_price, 2)]);
     $text .= trans_user('order_preparing', $user);
@@ -544,7 +548,7 @@ $bot->onCallbackQueryData('admin_cat:{id}', function (Nutgram $bot, string $id) 
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: 'admin_categories'));
 
     $bot->editMessageText(
-        text: trans_user('category_detail', $user, ['name' => $cat->name, 'status' => $status, 'count' => $cat->items_count]),
+        text: trans_user('category_detail', $user, ['name' => $cat->localizedName($user), 'status' => $status, 'count' => $cat->items_count]),
         reply_markup: $keyboard,
     );
     $bot->answerCallbackQuery();
@@ -574,7 +578,7 @@ $bot->onCallbackQueryData('admin_togglecat:{id}', function (Nutgram $bot, string
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: 'admin_categories'));
 
     $bot->editMessageText(
-        text: trans_user('category_detail', $user, ['name' => $cat->name, 'status' => $status, 'count' => $cat->items_count]),
+        text: trans_user('category_detail', $user, ['name' => $cat->localizedName($user), 'status' => $status, 'count' => $cat->items_count]),
         reply_markup: $keyboard,
     );
 });
@@ -595,7 +599,7 @@ $bot->onCallbackQueryData('admin_delcat:{id}', function (Nutgram $bot, string $i
     $keyboard = InlineKeyboardMarkup::make();
     foreach ($categories as $c) {
         $status = $c->is_active ? '✅' : '❌';
-        $keyboard->addRow(InlineKeyboardButton::make(text: "{$status} {$c->name}", callback_data: "admin_cat:{$c->id}"));
+        $keyboard->addRow(InlineKeyboardButton::make(text: "{$status} {$c->localizedName($user)}", callback_data: "admin_cat:{$c->id}"));
     }
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_new_category', $user), callback_data: 'admin_addcat'));
 
@@ -614,14 +618,14 @@ $bot->onCallbackQueryData('admin_catitems:{id}', function (Nutgram $bot, string 
     foreach ($cat->items as $item) {
         $status = $item->is_active ? '✅' : '❌';
         $keyboard->addRow(InlineKeyboardButton::make(
-            text: "{$status} {$item->name} - " . number_format($item->price, 2) . " RM",
+            text: "{$status} {$item->localizedName($user)} - " . number_format($item->price, 2) . " RM",
             callback_data: "admin_item:{$item->id}",
         ));
     }
-    $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_new_item_in', $user, ['name' => $cat->name]), callback_data: "admin_additem:{$cat->id}"));
+    $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_new_item_in', $user, ['name' => $cat->localizedName($user)]), callback_data: "admin_additem:{$cat->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: "admin_cat:{$cat->id}"));
 
-    $bot->editMessageText(text: trans_user('items_in_category', $user, ['name' => $cat->name]), reply_markup: $keyboard);
+    $bot->editMessageText(text: trans_user('items_in_category', $user, ['name' => $cat->localizedName($user)]), reply_markup: $keyboard);
     $bot->answerCallbackQuery();
 });
 
@@ -644,9 +648,9 @@ $bot->onCallbackQueryData('admin_item:{id}', function (Nutgram $bot, string $id)
 
     $bot->editMessageText(
         text: trans_user('item_detail_admin', $user, [
-            'name' => $item->name,
+            'name' => $item->localizedName($user),
             'price' => number_format($item->price, 2),
-            'category' => $item->category->name,
+            'category' => $item->category->localizedName($user),
             'status' => $status,
         ]),
         reply_markup: $keyboard,
@@ -675,9 +679,9 @@ $bot->onCallbackQueryData('admin_toggleitem:{id}', function (Nutgram $bot, strin
 
         $bot->editMessageText(
             text: trans_user('item_detail_admin', $user, [
-                'name' => $item->name,
+                'name' => $item->localizedName($user),
                 'price' => number_format($item->price, 2),
-                'category' => $item->category->name,
+                'category' => $item->category->localizedName($user),
                 'status' => $status,
             ]),
             reply_markup: $keyboard,
@@ -702,14 +706,14 @@ $bot->onCallbackQueryData('admin_delitem:{id}', function (Nutgram $bot, string $
         foreach ($cat->items as $i) {
             $status = $i->is_active ? '✅' : '❌';
             $keyboard->addRow(InlineKeyboardButton::make(
-                text: "{$status} {$i->name} - " . number_format($i->price, 2) . " RM",
+                text: "{$status} {$i->localizedName($user)} - " . number_format($i->price, 2) . " RM",
                 callback_data: "admin_item:{$i->id}",
             ));
         }
-        $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_new_item_in', $user, ['name' => $cat->name]), callback_data: "admin_additem:{$cat->id}"));
+        $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_new_item_in', $user, ['name' => $cat->localizedName($user)]), callback_data: "admin_additem:{$cat->id}"));
         $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: "admin_cat:{$cat->id}"));
 
-        $bot->editMessageText(text: trans_user('items_in_category', $user, ['name' => $cat->name]), reply_markup: $keyboard);
+        $bot->editMessageText(text: trans_user('items_in_category', $user, ['name' => $cat->localizedName($user)]), reply_markup: $keyboard);
     }
 });
 
@@ -718,7 +722,7 @@ $bot->onCallbackQueryData('admin_addcat', function (Nutgram $bot) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
-    $bot->sendMessage(trans_user('add_category_prompt', $user));
+    $bot->sendMessage(trans_user('add_category_prompt', $user), parse_mode: 'HTML');
     $user->update(['state' => 'waiting_category_name']);
     $bot->answerCallbackQuery();
 });
@@ -772,12 +776,21 @@ $bot->onMessage(function (Nutgram $bot) {
     // Handle admin state input (add category / add item)
     if ($user->is_admin && $user->state && $text) {
         if ($user->state === 'waiting_category_name') {
+            // Expected format: فارسی | English | Melayu
+            $names = array_map('trim', explode('|', $text));
+            if (count($names) < 3) {
+                $bot->sendMessage(trans_user('format_error_category', $user), parse_mode: 'HTML');
+                return;
+            }
+
             $category = Category::create([
-                'name' => $text,
+                'name_fa' => $names[0],
+                'name_en' => $names[1],
+                'name_ms' => $names[2],
                 'sort_order' => Category::max('sort_order') + 1,
             ]);
             $user->update(['state' => null]);
-            $bot->sendMessage(trans_user('category_added', $user, ['name' => $category->name]));
+            $bot->sendMessage(trans_user('category_added', $user, ['name' => $category->localizedName($user)]));
             return;
         }
 
@@ -790,14 +803,21 @@ $bot->onMessage(function (Nutgram $bot) {
                 return;
             }
 
-            $parts = explode('-', $text, 2);
+            // Expected format: فارسی | English | Melayu - price
+            $parts = explode('-', $text);
             if (count($parts) < 2) {
-                $bot->sendMessage(trans_user('format_error', $user));
+                $bot->sendMessage(trans_user('format_error_item', $user), parse_mode: 'HTML');
                 return;
             }
 
-            $name = trim($parts[0]);
-            $price = (float) trim($parts[1]);
+            $price = (float) trim(array_pop($parts));
+            $namesPart = implode('-', $parts);
+            $names = array_map('trim', explode('|', $namesPart));
+
+            if (count($names) < 3) {
+                $bot->sendMessage(trans_user('format_error_item', $user), parse_mode: 'HTML');
+                return;
+            }
 
             if ($price <= 0) {
                 $bot->sendMessage(trans_user('price_error', $user));
@@ -806,16 +826,18 @@ $bot->onMessage(function (Nutgram $bot) {
 
             $item = MenuItem::create([
                 'category_id' => $cat->id,
-                'name' => $name,
+                'name_fa' => $names[0],
+                'name_en' => $names[1],
+                'name_ms' => $names[2],
                 'price' => $price,
                 'sort_order' => MenuItem::where('category_id', $cat->id)->max('sort_order') + 1,
             ]);
 
             $user->update(['state' => null]);
             $bot->sendMessage(trans_user('item_added', $user, [
-                'name' => $item->name,
+                'name' => $item->localizedName($user),
                 'price' => number_format($price, 2),
-                'category' => $cat->name,
+                'category' => $cat->localizedName($user),
             ]));
             return;
         }
@@ -843,7 +865,7 @@ function showCategories(Nutgram $bot, ?User $user = null): void
 
     foreach ($categories as $category) {
         $keyboard->addRow(
-            InlineKeyboardButton::make(text: "🔵 {$category->name}", callback_data: "category:{$category->id}"),
+            InlineKeyboardButton::make(text: "🔵 {$category->localizedName($user)}", callback_data: "category:{$category->id}"),
         );
     }
 
@@ -896,7 +918,7 @@ function notifyAdmins(Nutgram $bot, Order $order, User $customer): void
 
         foreach ($order->items as $item) {
             $subtotal = $item->price * $item->quantity;
-            $text .= "• {$item->item_name} × {$item->quantity} = " . number_format($subtotal, 2) . " RM\n";
+            $text .= "• {$item->localizedItemName($admin)} × {$item->quantity} = " . number_format($subtotal, 2) . " RM\n";
         }
 
         $text .= trans_user('total_label', $admin, ['total' => number_format($order->total_price, 2)]);

@@ -13,4 +13,18 @@ class OrderItem extends Model
     {
         return $this->belongsTo(Order::class);
     }
+
+    public function localizedItemName(?User $user = null): string
+    {
+        $locale = $user->language ?? 'fa';
+        $field = "item_name_{$locale}";
+        return $this->{$field} ?? $this->item_name_fa ?? '';
+    }
+
+    public function localizedCategory(?User $user = null): string
+    {
+        $locale = $user->language ?? 'fa';
+        $field = "category_{$locale}";
+        return $this->{$field} ?? $this->category_fa ?? '';
+    }
 }

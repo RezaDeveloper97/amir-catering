@@ -13,17 +13,26 @@ class MenuSeeder extends Seeder
         $menu = config('menu');
         $order = 0;
 
-        foreach ($menu as $categoryName => $items) {
+        foreach ($menu as $categoryData) {
             $category = Category::firstOrCreate(
-                ['name' => $categoryName],
-                ['sort_order' => $order++],
+                ['name_fa' => $categoryData['name_fa']],
+                [
+                    'name_en' => $categoryData['name_en'],
+                    'name_ms' => $categoryData['name_ms'],
+                    'sort_order' => $order++,
+                ],
             );
 
             $itemOrder = 0;
-            foreach ($items as $item) {
+            foreach ($categoryData['items'] as $item) {
                 MenuItem::firstOrCreate(
-                    ['category_id' => $category->id, 'name' => $item['name']],
-                    ['price' => $item['price'], 'sort_order' => $itemOrder++],
+                    ['category_id' => $category->id, 'name_fa' => $item['name_fa']],
+                    [
+                        'name_en' => $item['name_en'],
+                        'name_ms' => $item['name_ms'],
+                        'price' => $item['price'],
+                        'sort_order' => $itemOrder++,
+                    ],
                 );
             }
         }

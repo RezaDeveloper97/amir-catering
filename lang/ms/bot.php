@@ -94,11 +94,12 @@ return [
     'btn_delete_item' => '🗑 Padam Item',
 
     // Admin - Add category/item
-    'add_category_prompt' => "📂 Hantar nama kategori baharu:\n\n(Hantar /cancel untuk batal)",
-    'add_item_prompt' => "🍽 Hantar nama dan harga item baharu dalam format ini:\n\n<b>Nama item - Harga</b>\n\nContoh: Chelo Kabab - 25.00\n\n(Hantar /cancel untuk batal)",
+    'add_category_prompt' => "📂 Hantar nama kategori baharu dalam 3 bahasa:\n<b>فارسی | English | Melayu</b>\n\nContoh: نوشیدنی | Beverages | Minuman\n\n(Hantar /cancel untuk batal)",
+    'add_item_prompt' => "🍽 Hantar nama item baharu dalam 3 bahasa dan harga:\n<b>فارسی | English | Melayu - Harga</b>\n\nContoh: چلو کباب | Chelo Kabab | Chelo Kabab - 25.00\n\n(Hantar /cancel untuk batal)",
     'category_added' => "✅ Kategori \":name\" ditambah!\n\nUntuk pengurusan: /admin",
     'category_not_found_err' => '❌ Kategori tidak dijumpai.',
-    'format_error' => "❌ Format salah. Sila hantar dalam format ini:\nNama item - Harga\n\nContoh: Chelo Kabab - 25.00",
+    'format_error_category' => "❌ Format salah. Sila hantar dalam format ini:\nفارسی | English | Melayu\n\nContoh: نوشیدنی | Beverages | Minuman",
+    'format_error_item' => "❌ Format salah. Sila hantar dalam format ini:\nفارسی | English | Melayu - Harga\n\nContoh: چلو کباب | Chelo Kabab | Chelo Kabab - 25.00",
     'price_error' => '❌ Harga mestilah nombor positif.',
     'item_added' => "✅ \":name\" dengan harga :price RM ditambah ke :category!\n\nUntuk pengurusan: /admin",
 

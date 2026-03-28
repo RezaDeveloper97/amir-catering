@@ -94,11 +94,12 @@ return [
     'btn_delete_item' => '🗑 Delete Item',
 
     // Admin - Add category/item
-    'add_category_prompt' => "📂 Send the new category name:\n\n(Send /cancel to cancel)",
-    'add_item_prompt' => "🍽 Send the name and price of the new item in this format:\n\n<b>Item name - Price</b>\n\nExample: Chelo Kabab - 25.00\n\n(Send /cancel to cancel)",
+    'add_category_prompt' => "📂 Send the new category name in 3 languages:\n<b>فارسی | English | Melayu</b>\n\nExample: نوشیدنی | Beverages | Minuman\n\n(Send /cancel to cancel)",
+    'add_item_prompt' => "🍽 Send the new item name in 3 languages and price:\n<b>فارسی | English | Melayu - Price</b>\n\nExample: چلو کباب | Chelo Kabab | Chelo Kabab - 25.00\n\n(Send /cancel to cancel)",
     'category_added' => "✅ Category \":name\" added!\n\nFor management: /admin",
     'category_not_found_err' => '❌ Category not found.',
-    'format_error' => "❌ Wrong format. Please send in this format:\nItem name - Price\n\nExample: Chelo Kabab - 25.00",
+    'format_error_category' => "❌ Wrong format. Please send in this format:\nفارسی | English | Melayu\n\nExample: نوشیدنی | Beverages | Minuman",
+    'format_error_item' => "❌ Wrong format. Please send in this format:\nفارسی | English | Melayu - Price\n\nExample: چلو کباب | Chelo Kabab | Chelo Kabab - 25.00",
     'price_error' => '❌ Price must be a positive number.',
     'item_added' => "✅ \":name\" with price :price RM added to :category!\n\nFor management: /admin",
 

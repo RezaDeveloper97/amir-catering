@@ -18,4 +18,11 @@ class MenuItem extends Model
     {
         return $this->belongsTo(Category::class);
     }
+
+    public function localizedName(?User $user = null): string
+    {
+        $locale = $user->language ?? 'fa';
+        $field = "name_{$locale}";
+        return $this->{$field} ?? $this->name_fa ?? '';
+    }
 }

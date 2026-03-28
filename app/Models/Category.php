@@ -17,4 +17,11 @@ class Category extends Model
     {
         return $this->hasMany(MenuItem::class)->orderBy('sort_order');
     }
+
+    public function localizedName(?User $user = null): string
+    {
+        $locale = $user->language ?? 'fa';
+        $field = "name_{$locale}";
+        return $this->{$field} ?? $this->name_fa ?? '';
+    }
 }

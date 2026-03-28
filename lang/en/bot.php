@@ -103,6 +103,14 @@ return [
     'price_error' => '❌ Price must be a positive number.',
     'item_added' => "✅ \":name\" with price :price RM added to :category!\n\nFor management: /admin",
 
+    // Admin - Edit category/item
+    'btn_edit_category' => '✏️ Edit Category',
+    'btn_edit_item' => '✏️ Edit Item',
+    'edit_category_prompt' => "✏️ Send the new name for \":name\" in 3 languages:\n<b>فارسی | English | Melayu</b>\n\n(Send /cancel to cancel)",
+    'edit_item_prompt' => "✏️ Send the new name and price for \":name\":\n<b>فارسی | English | Melayu - Price</b>\n\n(Send /cancel to cancel)",
+    'category_updated' => '✅ Category ":name" updated!',
+    'item_updated' => '✅ ":name" updated to :price RM!',
+
     // Admin panel
     'admin_panel_title' => "⚙️ Admin Panel\n\nSelect a section:",
 

@@ -526,6 +526,26 @@ $bot->onCallbackQueryData('place_order', function (Nutgram $bot) {
 |--------------------------------------------------------------------------
 */
 
+// Back to categories list (callback from inline keyboard)
+$bot->onCallbackQueryData('admin_categories', function (Nutgram $bot) {
+    $user = $bot->get('user');
+    if (!$user?->is_admin) return;
+
+    $categories = Category::orderBy('sort_order')->get();
+    $keyboard = InlineKeyboardMarkup::make();
+    foreach ($categories as $cat) {
+        $status = $cat->is_active ? '✅' : '❌';
+        $keyboard->addRow(InlineKeyboardButton::make(
+            text: "{$status} {$cat->localizedName($user)}",
+            callback_data: "admin_cat:{$cat->id}",
+        ));
+    }
+    $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_new_category', $user), callback_data: 'admin_addcat'));
+
+    $bot->editMessageText(text: trans_user('categories_header', $user), reply_markup: $keyboard);
+    $bot->answerCallbackQuery();
+});
+
 // Category detail (toggle active, edit items, delete)
 $bot->onCallbackQueryData('admin_cat:{id}', function (Nutgram $bot, string $id) {
     $user = $bot->get('user');
@@ -543,6 +563,7 @@ $bot->onCallbackQueryData('admin_cat:{id}', function (Nutgram $bot, string $id) 
         text: $cat->is_active ? trans_user('btn_deactivate', $user) : trans_user('btn_activate', $user),
         callback_data: "admin_togglecat:{$cat->id}",
     ));
+    $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_edit_category', $user), callback_data: "admin_editcat:{$cat->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_view_items', $user), callback_data: "admin_catitems:{$cat->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_delete_category', $user), callback_data: "admin_delcat:{$cat->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: 'admin_categories'));
@@ -573,6 +594,7 @@ $bot->onCallbackQueryData('admin_togglecat:{id}', function (Nutgram $bot, string
         text: $cat->is_active ? trans_user('btn_deactivate', $user) : trans_user('btn_activate', $user),
         callback_data: "admin_togglecat:{$cat->id}",
     ));
+    $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_edit_category', $user), callback_data: "admin_editcat:{$cat->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_view_items', $user), callback_data: "admin_catitems:{$cat->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_delete_category', $user), callback_data: "admin_delcat:{$cat->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: 'admin_categories'));
@@ -643,6 +665,7 @@ $bot->onCallbackQueryData('admin_item:{id}', function (Nutgram $bot, string $id)
         text: $item->is_active ? trans_user('btn_deactivate', $user) : trans_user('btn_activate', $user),
         callback_data: "admin_toggleitem:{$item->id}",
     ));
+    $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_edit_item', $user), callback_data: "admin_edititem:{$item->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_delete_item', $user), callback_data: "admin_delitem:{$item->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: "admin_catitems:{$item->category_id}"));
 
@@ -674,6 +697,7 @@ $bot->onCallbackQueryData('admin_toggleitem:{id}', function (Nutgram $bot, strin
             text: $item->is_active ? trans_user('btn_deactivate', $user) : trans_user('btn_activate', $user),
             callback_data: "admin_toggleitem:{$item->id}",
         ));
+        $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_edit_item', $user), callback_data: "admin_edititem:{$item->id}"));
         $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_delete_item', $user), callback_data: "admin_delitem:{$item->id}"));
         $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: "admin_catitems:{$item->category_id}"));
 
@@ -737,6 +761,32 @@ $bot->onCallbackQueryData('admin_additem:{catId}', function (Nutgram $bot, strin
 
     $bot->sendMessage(trans_user('add_item_prompt', $user), parse_mode: 'HTML');
     $user->update(['state' => "waiting_item_details:{$catId}"]);
+    $bot->answerCallbackQuery();
+});
+
+// Edit category - ask for new name
+$bot->onCallbackQueryData('admin_editcat:{id}', function (Nutgram $bot, string $id) {
+    $user = $bot->get('user');
+    if (!$user?->is_admin) return;
+
+    $cat = Category::find($id);
+    if (!$cat) return;
+
+    $bot->sendMessage(trans_user('edit_category_prompt', $user, ['name' => $cat->localizedName($user)]), parse_mode: 'HTML');
+    $user->update(['state' => "waiting_editcat:{$id}"]);
+    $bot->answerCallbackQuery();
+});
+
+// Edit item - ask for new details
+$bot->onCallbackQueryData('admin_edititem:{id}', function (Nutgram $bot, string $id) {
+    $user = $bot->get('user');
+    if (!$user?->is_admin) return;
+
+    $item = MenuItem::find($id);
+    if (!$item) return;
+
+    $bot->sendMessage(trans_user('edit_item_prompt', $user, ['name' => $item->localizedName($user)]), parse_mode: 'HTML');
+    $user->update(['state' => "waiting_edititem:{$id}"]);
     $bot->answerCallbackQuery();
 });
 
@@ -838,6 +888,72 @@ $bot->onMessage(function (Nutgram $bot) {
                 'name' => $item->localizedName($user),
                 'price' => number_format($price, 2),
                 'category' => $cat->localizedName($user),
+            ]));
+            return;
+        }
+
+        if (str_starts_with($user->state, 'waiting_editcat:')) {
+            $catId = str_replace('waiting_editcat:', '', $user->state);
+            $cat = Category::find($catId);
+            if (!$cat) {
+                $user->update(['state' => null]);
+                $bot->sendMessage(trans_user('category_not_found_err', $user));
+                return;
+            }
+
+            $names = array_map('trim', explode('|', $text));
+            if (count($names) < 3) {
+                $bot->sendMessage(trans_user('format_error_category', $user), parse_mode: 'HTML');
+                return;
+            }
+
+            $cat->update(['name_fa' => $names[0], 'name_en' => $names[1], 'name_ms' => $names[2]]);
+            $user->update(['state' => null]);
+            $bot->sendMessage(trans_user('category_updated', $user, ['name' => $cat->localizedName($user)]));
+            return;
+        }
+
+        if (str_starts_with($user->state, 'waiting_edititem:')) {
+            $itemId = str_replace('waiting_edititem:', '', $user->state);
+            $item = MenuItem::find($itemId);
+            if (!$item) {
+                $user->update(['state' => null]);
+                $bot->sendMessage(trans_user('item_not_found', $user));
+                return;
+            }
+
+            // Expected format: فارسی | English | Melayu - price
+            $parts = explode('-', $text);
+            if (count($parts) < 2) {
+                $bot->sendMessage(trans_user('format_error_item', $user), parse_mode: 'HTML');
+                return;
+            }
+
+            $price = (float) trim(array_pop($parts));
+            $namesPart = implode('-', $parts);
+            $names = array_map('trim', explode('|', $namesPart));
+
+            if (count($names) < 3) {
+                $bot->sendMessage(trans_user('format_error_item', $user), parse_mode: 'HTML');
+                return;
+            }
+
+            if ($price <= 0) {
+                $bot->sendMessage(trans_user('price_error', $user));
+                return;
+            }
+
+            $item->update([
+                'name_fa' => $names[0],
+                'name_en' => $names[1],
+                'name_ms' => $names[2],
+                'price' => $price,
+            ]);
+
+            $user->update(['state' => null]);
+            $bot->sendMessage(trans_user('item_updated', $user, [
+                'name' => $item->localizedName($user),
+                'price' => number_format($price, 2),
             ]));
             return;
         }

@@ -103,6 +103,14 @@ return [
     'price_error' => '❌ Harga mestilah nombor positif.',
     'item_added' => "✅ \":name\" dengan harga :price RM ditambah ke :category!\n\nUntuk pengurusan: /admin",
 
+    // Admin - Edit category/item
+    'btn_edit_category' => '✏️ Edit Kategori',
+    'btn_edit_item' => '✏️ Edit Item',
+    'edit_category_prompt' => "✏️ Hantar nama baharu untuk \":name\" dalam 3 bahasa:\n<b>فارسی | English | Melayu</b>\n\n(Hantar /cancel untuk batal)",
+    'edit_item_prompt' => "✏️ Hantar nama dan harga baharu untuk \":name\":\n<b>فارسی | English | Melayu - Harga</b>\n\n(Hantar /cancel untuk batal)",
+    'category_updated' => '✅ Kategori ":name" dikemaskini!',
+    'item_updated' => '✅ ":name" dikemaskini ke :price RM!',
+
     // Admin panel
     'admin_panel_title' => "⚙️ Panel Admin\n\nPilih bahagian:",
 

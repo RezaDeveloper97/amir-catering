@@ -118,8 +118,43 @@ $bot->onText('⚙️ پنل مدیریت', function (Nutgram $bot) {
         return;
     }
 
-    $bot->sendMessage(text: '⚙️ در حال نمایش پنل مدیریت...', reply_markup: backToMenuKeyboard());
     showAdminPanel($bot);
+});
+
+$bot->onText('📂 مدیریت دسته‌بندی‌ها', function (Nutgram $bot) {
+    $user = $bot->get('user');
+    if (!$user?->is_admin) return;
+
+    $categories = Category::orderBy('sort_order')->get();
+    $keyboard = InlineKeyboardMarkup::make();
+
+    foreach ($categories as $cat) {
+        $status = $cat->is_active ? '✅' : '❌';
+        $keyboard->addRow(
+            InlineKeyboardButton::make(text: "{$status} {$cat->name}", callback_data: "admin_cat:{$cat->id}"),
+        );
+    }
+
+    $keyboard->addRow(InlineKeyboardButton::make(text: '➕ دسته‌بندی جدید', callback_data: 'admin_addcat'));
+
+    $bot->sendMessage(text: "📂 دسته‌بندی‌ها:\n\n✅ = فعال | ❌ = غیرفعال", reply_markup: $keyboard);
+});
+
+$bot->onText('🍽 مدیریت آیتم‌ها', function (Nutgram $bot) {
+    $user = $bot->get('user');
+    if (!$user?->is_admin) return;
+
+    $categories = Category::orderBy('sort_order')->get();
+    $keyboard = InlineKeyboardMarkup::make();
+
+    foreach ($categories as $cat) {
+        $keyboard->addRow(InlineKeyboardButton::make(
+            text: "📂 {$cat->name}",
+            callback_data: "admin_catitems:{$cat->id}",
+        ));
+    }
+
+    $bot->sendMessage(text: "🍽 یک دسته‌بندی انتخاب کنید تا آیتم‌هایش را ببینید:", reply_markup: $keyboard);
 });
 
 $bot->onText('📋 سفارشات من', function (Nutgram $bot) {
@@ -409,41 +444,6 @@ $bot->onCallbackQueryData('place_order', function (Nutgram $bot) {
 |--------------------------------------------------------------------------
 */
 
-// Admin panel
-$bot->onCallbackQueryData('admin_panel', function (Nutgram $bot) {
-    $user = $bot->get('user');
-    if (!$user?->is_admin) return;
-
-    $keyboard = InlineKeyboardMarkup::make();
-    $keyboard->addRow(InlineKeyboardButton::make(text: '📂 مدیریت دسته‌بندی‌ها', callback_data: 'admin_categories'));
-    $keyboard->addRow(InlineKeyboardButton::make(text: '🍽 مدیریت آیتم‌ها', callback_data: 'admin_items'));
-
-    $bot->editMessageText(text: "⚙️ پنل مدیریت\n\nیک بخش انتخاب کنید:", reply_markup: $keyboard);
-    $bot->answerCallbackQuery();
-});
-
-// List categories for admin
-$bot->onCallbackQueryData('admin_categories', function (Nutgram $bot) {
-    $user = $bot->get('user');
-    if (!$user?->is_admin) return;
-
-    $categories = Category::orderBy('sort_order')->get();
-    $keyboard = InlineKeyboardMarkup::make();
-
-    foreach ($categories as $cat) {
-        $status = $cat->is_active ? '✅' : '❌';
-        $keyboard->addRow(
-            InlineKeyboardButton::make(text: "{$status} {$cat->name}", callback_data: "admin_cat:{$cat->id}"),
-        );
-    }
-
-    $keyboard->addRow(InlineKeyboardButton::make(text: '➕ دسته‌بندی جدید', callback_data: 'admin_addcat'));
-    $keyboard->addRow(InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: 'admin_panel'));
-
-    $bot->editMessageText(text: "📂 دسته‌بندی‌ها:\n\n✅ = فعال | ❌ = غیرفعال", reply_markup: $keyboard);
-    $bot->answerCallbackQuery();
-});
-
 // Category detail (toggle active, edit items, delete)
 $bot->onCallbackQueryData('admin_cat:{id}', function (Nutgram $bot, string $id) {
     $user = $bot->get('user');
@@ -520,7 +520,6 @@ $bot->onCallbackQueryData('admin_delcat:{id}', function (Nutgram $bot, string $i
         $keyboard->addRow(InlineKeyboardButton::make(text: "{$status} {$c->name}", callback_data: "admin_cat:{$c->id}"));
     }
     $keyboard->addRow(InlineKeyboardButton::make(text: '➕ دسته‌بندی جدید', callback_data: 'admin_addcat'));
-    $keyboard->addRow(InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: 'admin_panel'));
 
     $bot->editMessageText(text: "📂 دسته‌بندی‌ها:\n\n✅ = فعال | ❌ = غیرفعال", reply_markup: $keyboard);
 });
@@ -775,32 +774,11 @@ function showCategories(Nutgram $bot): void
 
 function showAdminPanel(Nutgram $bot): void
 {
-    $keyboard = InlineKeyboardMarkup::make();
-    $keyboard->addRow(InlineKeyboardButton::make(text: '📂 مدیریت دسته‌بندی‌ها', callback_data: 'admin_categories'));
-    $keyboard->addRow(InlineKeyboardButton::make(text: '🍽 مدیریت آیتم‌ها', callback_data: 'admin_items'));
-
-    $bot->sendMessage(text: "⚙️ پنل مدیریت\n\nیک بخش انتخاب کنید:", reply_markup: $keyboard);
+    $bot->sendMessage(
+        text: "⚙️ پنل مدیریت\n\nیک بخش انتخاب کنید:",
+        reply_markup: adminMenuKeyboard(),
+    );
 }
-
-// Admin items list (all categories)
-$bot->onCallbackQueryData('admin_items', function (Nutgram $bot) {
-    $user = $bot->get('user');
-    if (!$user?->is_admin) return;
-
-    $categories = Category::orderBy('sort_order')->get();
-    $keyboard = InlineKeyboardMarkup::make();
-
-    foreach ($categories as $cat) {
-        $keyboard->addRow(InlineKeyboardButton::make(
-            text: "📂 {$cat->name}",
-            callback_data: "admin_catitems:{$cat->id}",
-        ));
-    }
-    $keyboard->addRow(InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: 'admin_panel'));
-
-    $bot->editMessageText(text: "🍽 یک دسته‌بندی انتخاب کنید تا آیتم‌هایش را ببینید:", reply_markup: $keyboard);
-    $bot->answerCallbackQuery();
-});
 
 function notifyAdmins(Nutgram $bot, Order $order, User $customer): void
 {

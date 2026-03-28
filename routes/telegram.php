@@ -21,7 +21,9 @@ use SergiX44\Nutgram\Telegram\Types\Keyboard\InlineKeyboardMarkup;
 $bot->middleware(function (Nutgram $bot, $next) {
     $userId = $bot->userId();
     if ($userId) {
-        $user = User::where('telegram_id', $userId)->first();
+        $user = cache()->remember("user:{$userId}", 300, function () use ($userId) {
+            return User::where('telegram_id', $userId)->first();
+        });
         $bot->set('user', $user);
     }
     $next($bot);

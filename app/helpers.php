@@ -12,6 +12,16 @@ if (!function_exists('backToMenuKeyboard')) {
     }
 }
 
+if (!function_exists('adminMenuKeyboard')) {
+    function adminMenuKeyboard(): ReplyKeyboardMarkup
+    {
+        return ReplyKeyboardMarkup::make(resize_keyboard: true, is_persistent: true)
+            ->addRow(KeyboardButton::make('📂 مدیریت دسته‌بندی‌ها'))
+            ->addRow(KeyboardButton::make('🍽 مدیریت آیتم‌ها'))
+            ->addRow(KeyboardButton::make('🔴 بازگشت به منو'));
+    }
+}
+
 if (!function_exists('mainMenuKeyboard')) {
     function mainMenuKeyboard(?User $user = null): ReplyKeyboardMarkup
     {

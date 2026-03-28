@@ -94,6 +94,7 @@ $bot->onText('🛒 سفارش', function (Nutgram $bot) {
         return;
     }
 
+    $bot->sendMessage(text: '🍽 در حال نمایش منو...', reply_markup: backToMenuKeyboard());
     showCategories($bot);
 });
 
@@ -105,6 +106,7 @@ $bot->onText('📍 تغییر آدرس', function (Nutgram $bot) {
         return;
     }
 
+    $bot->sendMessage(text: '📍 در حال تغییر آدرس...', reply_markup: backToMenuKeyboard());
     ChangeAddressConversation::begin($bot);
 });
 
@@ -116,6 +118,7 @@ $bot->onText('⚙️ پنل مدیریت', function (Nutgram $bot) {
         return;
     }
 
+    $bot->sendMessage(text: '⚙️ در حال نمایش پنل مدیریت...', reply_markup: backToMenuKeyboard());
     showAdminPanel($bot);
 });
 
@@ -130,7 +133,10 @@ $bot->onText('📋 سفارشات من', function (Nutgram $bot) {
     $orders = $user->orders()->where('status', '!=', 'cart')->with('items')->latest()->limit(5)->get();
 
     if ($orders->isEmpty()) {
-        $bot->sendMessage("📋 شما هنوز سفارشی ثبت نکرده‌اید.");
+        $bot->sendMessage(
+            text: "📋 شما هنوز سفارشی ثبت نکرده‌اید.",
+            reply_markup: backToMenuKeyboard(),
+        );
         return;
     }
 
@@ -144,7 +150,7 @@ $bot->onText('📋 سفارشات من', function (Nutgram $bot) {
         $text .= "📌 وضعیت: {$order->status}\n\n";
     }
 
-    $bot->sendMessage($text);
+    $bot->sendMessage(text: $text, reply_markup: backToMenuKeyboard());
 });
 
 /*
@@ -654,58 +660,81 @@ $bot->onCommand('cancel', function (Nutgram $bot) {
 
 /*
 |--------------------------------------------------------------------------
-| Catch-all for admin text input (add category / add item)
+| Catch-all: back button, admin text input, unknown messages
 |--------------------------------------------------------------------------
 */
 $bot->onMessage(function (Nutgram $bot) {
     $user = $bot->get('user');
-    if (!$user || !$user->state || !$user->is_admin) return;
+    if (!$user) return;
 
     $text = $bot->message()?->text;
-    if (!$text) return;
 
-    if ($user->state === 'waiting_category_name') {
-        $category = Category::create([
-            'name' => $text,
-            'sort_order' => Category::max('sort_order') + 1,
-        ]);
-        $user->update(['state' => null]);
-        $bot->sendMessage("✅ دسته‌بندی «{$category->name}» اضافه شد!\n\nبرای مدیریت: /admin");
+    // Handle "بازگشت به منو" button
+    if ($text === '🔴 بازگشت به منو') {
+        if ($user->state) {
+            $user->update(['state' => null]);
+        }
+        $bot->sendMessage(
+            text: "از منوی زیر انتخاب کنید:",
+            reply_markup: mainMenuKeyboard($user),
+        );
         return;
     }
 
-    if (str_starts_with($user->state, 'waiting_item_details:')) {
-        $catId = str_replace('waiting_item_details:', '', $user->state);
-        $cat = Category::find($catId);
-        if (!$cat) {
+    // Handle admin state input (add category / add item)
+    if ($user->is_admin && $user->state && $text) {
+        if ($user->state === 'waiting_category_name') {
+            $category = Category::create([
+                'name' => $text,
+                'sort_order' => Category::max('sort_order') + 1,
+            ]);
             $user->update(['state' => null]);
-            $bot->sendMessage("❌ دسته‌بندی یافت نشد.");
+            $bot->sendMessage("✅ دسته‌بندی «{$category->name}» اضافه شد!\n\nبرای مدیریت: /admin");
             return;
         }
 
-        $parts = explode('-', $text, 2);
-        if (count($parts) < 2) {
-            $bot->sendMessage("❌ فرمت اشتباه. لطفاً به فرمت زیر بفرستید:\nنام آیتم - قیمت\n\nمثال: چلو کباب - 25.00");
+        if (str_starts_with($user->state, 'waiting_item_details:')) {
+            $catId = str_replace('waiting_item_details:', '', $user->state);
+            $cat = Category::find($catId);
+            if (!$cat) {
+                $user->update(['state' => null]);
+                $bot->sendMessage("❌ دسته‌بندی یافت نشد.");
+                return;
+            }
+
+            $parts = explode('-', $text, 2);
+            if (count($parts) < 2) {
+                $bot->sendMessage("❌ فرمت اشتباه. لطفاً به فرمت زیر بفرستید:\nنام آیتم - قیمت\n\nمثال: چلو کباب - 25.00");
+                return;
+            }
+
+            $name = trim($parts[0]);
+            $price = (float) trim($parts[1]);
+
+            if ($price <= 0) {
+                $bot->sendMessage("❌ قیمت باید عدد مثبت باشد.");
+                return;
+            }
+
+            $item = MenuItem::create([
+                'category_id' => $cat->id,
+                'name' => $name,
+                'price' => $price,
+                'sort_order' => MenuItem::where('category_id', $cat->id)->max('sort_order') + 1,
+            ]);
+
+            $user->update(['state' => null]);
+            $bot->sendMessage("✅ «{$item->name}» با قیمت " . number_format($price, 2) . " RM به {$cat->name} اضافه شد!\n\nبرای مدیریت: /admin");
             return;
         }
+    }
 
-        $name = trim($parts[0]);
-        $price = (float) trim($parts[1]);
-
-        if ($price <= 0) {
-            $bot->sendMessage("❌ قیمت باید عدد مثبت باشد.");
-            return;
-        }
-
-        $item = MenuItem::create([
-            'category_id' => $cat->id,
-            'name' => $name,
-            'price' => $price,
-            'sort_order' => MenuItem::where('category_id', $cat->id)->max('sort_order') + 1,
-        ]);
-
-        $user->update(['state' => null]);
-        $bot->sendMessage("✅ «{$item->name}» با قیمت " . number_format($price, 2) . " RM به {$cat->name} اضافه شد!\n\nبرای مدیریت: /admin");
+    // Unknown message - respond to registered users
+    if ($user->is_registered) {
+        $bot->sendMessage(
+            text: "❌ متوجه نشدم! لطفاً از منوی زیر استفاده کنید:",
+            reply_markup: mainMenuKeyboard($user),
+        );
     }
 });
 
@@ -771,21 +800,6 @@ $bot->onCallbackQueryData('admin_items', function (Nutgram $bot) {
 
     $bot->editMessageText(text: "🍽 یک دسته‌بندی انتخاب کنید تا آیتم‌هایش را ببینید:", reply_markup: $keyboard);
     $bot->answerCallbackQuery();
-});
-
-/*
-|--------------------------------------------------------------------------
-| Fallback - Unknown messages
-|--------------------------------------------------------------------------
-*/
-$bot->fallback(function (Nutgram $bot) {
-    $user = $bot->get('user');
-    if (!$user || !$user->is_registered) return;
-
-    $bot->sendMessage(
-        text: "❌ متوجه نشدم! لطفاً از منوی زیر استفاده کنید:",
-        reply_markup: mainMenuKeyboard($user),
-    );
 });
 
 function notifyAdmins(Nutgram $bot, Order $order, User $customer): void

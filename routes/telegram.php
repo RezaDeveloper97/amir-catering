@@ -15,6 +15,20 @@ use SergiX44\Nutgram\Telegram\Types\Keyboard\InlineKeyboardMarkup;
 
 /*
 |--------------------------------------------------------------------------
+| Middleware - Resolve user once per request
+|--------------------------------------------------------------------------
+*/
+$bot->middleware(function (Nutgram $bot, $next) {
+    $userId = $bot->userId();
+    if ($userId) {
+        $user = User::where('telegram_id', $userId)->first();
+        $bot->set('user', $user);
+    }
+    $next($bot);
+});
+
+/*
+|--------------------------------------------------------------------------
 | Start Command
 |--------------------------------------------------------------------------
 */
@@ -23,11 +37,12 @@ $bot->onCommand('start', function (Nutgram $bot) {
         ['telegram_id' => $bot->userId()],
         ['first_name' => $bot->user()?->first_name],
     );
+    $bot->set('user', $user);
 
     if ($user->is_registered) {
         $bot->sendMessage(
             text: "سلام {$user->first_name} عزیز! 👋\n\nبه امیر کترینگ خوش آمدید 🍽\n\nاز منوی زیر انتخاب کنید:",
-            reply_markup: mainMenuKeyboard(),
+            reply_markup: mainMenuKeyboard($user),
         );
         return;
     }
@@ -42,10 +57,13 @@ $bot->onCommand('start', function (Nutgram $bot) {
 |--------------------------------------------------------------------------
 */
 $bot->onText('adminNowPlz', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if ($user) {
         $user->update(['is_admin' => true]);
-        $bot->sendMessage("✅ شما به عنوان ادمین ثبت شدید. از این پس تمام سفارشات برای شما ارسال خواهد شد.");
+        $bot->sendMessage(
+            text: "✅ شما به عنوان ادمین ثبت شدید. از این پس تمام سفارشات برای شما ارسال خواهد شد.",
+            reply_markup: mainMenuKeyboard($user->refresh()),
+        );
     }
 });
 
@@ -55,7 +73,7 @@ $bot->onText('adminNowPlz', function (Nutgram $bot) {
 |--------------------------------------------------------------------------
 */
 $bot->onCommand('admin', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user || !$user->is_admin) {
         $bot->sendMessage("❌ شما دسترسی ادمین ندارید.");
         return;
@@ -69,7 +87,7 @@ $bot->onCommand('admin', function (Nutgram $bot) {
 |--------------------------------------------------------------------------
 */
 $bot->onText('🛒 سفارش', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
 
     if (!$user || !$user->is_registered) {
         $bot->sendMessage("❌ لطفاً ابتدا ثبت نام کنید. دستور /start را بزنید.");
@@ -80,7 +98,7 @@ $bot->onText('🛒 سفارش', function (Nutgram $bot) {
 });
 
 $bot->onText('📍 تغییر آدرس', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
 
     if (!$user || !$user->is_registered) {
         $bot->sendMessage("❌ لطفاً ابتدا ثبت نام کنید. دستور /start را بزنید.");
@@ -90,15 +108,26 @@ $bot->onText('📍 تغییر آدرس', function (Nutgram $bot) {
     ChangeAddressConversation::begin($bot);
 });
 
+$bot->onText('⚙️ پنل مدیریت', function (Nutgram $bot) {
+    $user = $bot->get('user');
+
+    if (!$user || !$user->is_admin) {
+        $bot->sendMessage("❌ شما دسترسی ادمین ندارید.");
+        return;
+    }
+
+    showAdminPanel($bot);
+});
+
 $bot->onText('📋 سفارشات من', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
 
     if (!$user || !$user->is_registered) {
         $bot->sendMessage("❌ لطفاً ابتدا ثبت نام کنید. دستور /start را بزنید.");
         return;
     }
 
-    $orders = $user->orders()->where('status', '!=', 'cart')->with('items')->latest()->take(5)->get();
+    $orders = $user->orders()->where('status', '!=', 'cart')->with('items')->latest()->limit(5)->get();
 
     if ($orders->isEmpty()) {
         $bot->sendMessage("📋 شما هنوز سفارشی ثبت نکرده‌اید.");
@@ -138,14 +167,14 @@ $bot->onCallbackQueryData('category:{id}', function (Nutgram $bot, string $id) {
     foreach ($category->items as $item) {
         $keyboard->addRow(
             InlineKeyboardButton::make(
-                text: "{$item->name} - " . number_format($item->price, 2) . " RM",
+                text: "🔵 {$item->name} - " . number_format($item->price, 2) . " RM",
                 callback_data: "item:{$item->id}",
             ),
         );
     }
 
     $keyboard->addRow(
-        InlineKeyboardButton::make(text: '🔙 بازگشت', callback_data: 'back_to_categories'),
+        InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: 'back_to_categories'),
     );
 
     $bot->editMessageText(
@@ -176,7 +205,7 @@ $bot->onCallbackQueryData('item:{id}', function (Nutgram $bot, string $id) {
         InlineKeyboardButton::make(text: '6', callback_data: "qty:{$item->id}:6"),
     );
     $keyboard->addRow(
-        InlineKeyboardButton::make(text: '🔙 بازگشت', callback_data: "category:{$item->category_id}"),
+        InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: "category:{$item->category_id}"),
     );
 
     $bot->editMessageText(
@@ -195,7 +224,7 @@ $bot->onCallbackQueryData('qty:{itemId}:{quantity}', function (Nutgram $bot, str
         return;
     }
 
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
 
     $order = Order::firstOrCreate(
         ['user_id' => $user->id, 'status' => 'cart'],
@@ -224,13 +253,13 @@ $bot->onCallbackQueryData('qty:{itemId}:{quantity}', function (Nutgram $bot, str
 
     $keyboard = InlineKeyboardMarkup::make();
     $keyboard->addRow(
-        InlineKeyboardButton::make(text: '🛒 ادامه خرید', callback_data: 'back_to_categories'),
+        InlineKeyboardButton::make(text: '🔵 ادامه خرید', callback_data: 'back_to_categories'),
     );
     $keyboard->addRow(
-        InlineKeyboardButton::make(text: '📋 مشاهده سبد خرید', callback_data: 'view_cart'),
+        InlineKeyboardButton::make(text: '🔵 مشاهده سبد خرید', callback_data: 'view_cart'),
     );
     $keyboard->addRow(
-        InlineKeyboardButton::make(text: '✅ ثبت سفارش', callback_data: 'place_order'),
+        InlineKeyboardButton::make(text: '🟢 ثبت سفارش', callback_data: 'place_order'),
     );
 
     $bot->editMessageText(
@@ -247,17 +276,17 @@ $bot->onCallbackQueryData('back_to_categories', function (Nutgram $bot) {
 
     foreach ($categories as $category) {
         $keyboard->addRow(
-            InlineKeyboardButton::make(text: $category->name, callback_data: "category:{$category->id}"),
+            InlineKeyboardButton::make(text: "🔵 {$category->name}", callback_data: "category:{$category->id}"),
         );
     }
 
-    $user = User::where('telegram_id', $bot->userId())->first();
-    $cart = Order::where('user_id', $user->id)->where('status', 'cart')->first();
+    $user = $bot->get('user');
+    $cart = Order::where('user_id', $user->id)->where('status', 'cart')->withCount('items')->first();
 
-    if ($cart && $cart->items()->count() > 0) {
+    if ($cart && $cart->items_count > 0) {
         $keyboard->addRow(
             InlineKeyboardButton::make(
-                text: '📋 سبد خرید (' . number_format($cart->total_price, 2) . ' RM)',
+                text: '🔵 سبد خرید (' . number_format($cart->total_price, 2) . ' RM)',
                 callback_data: 'view_cart',
             ),
         );
@@ -272,7 +301,7 @@ $bot->onCallbackQueryData('back_to_categories', function (Nutgram $bot) {
 
 // View cart
 $bot->onCallbackQueryData('view_cart', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     $cart = Order::where('user_id', $user->id)->where('status', 'cart')->with('items')->first();
 
     if (!$cart || $cart->items->isEmpty()) {
@@ -289,13 +318,13 @@ $bot->onCallbackQueryData('view_cart', function (Nutgram $bot) {
 
     $keyboard = InlineKeyboardMarkup::make();
     $keyboard->addRow(
-        InlineKeyboardButton::make(text: '✅ ثبت سفارش', callback_data: 'place_order'),
+        InlineKeyboardButton::make(text: '🟢 ثبت سفارش', callback_data: 'place_order'),
     );
     $keyboard->addRow(
-        InlineKeyboardButton::make(text: '🛒 ادامه خرید', callback_data: 'back_to_categories'),
+        InlineKeyboardButton::make(text: '🔵 ادامه خرید', callback_data: 'back_to_categories'),
     );
     $keyboard->addRow(
-        InlineKeyboardButton::make(text: '🗑 خالی کردن سبد', callback_data: 'clear_cart'),
+        InlineKeyboardButton::make(text: '🔴 خالی کردن سبد', callback_data: 'clear_cart'),
     );
 
     $bot->editMessageText(text: $text, reply_markup: $keyboard);
@@ -304,7 +333,7 @@ $bot->onCallbackQueryData('view_cart', function (Nutgram $bot) {
 
 // Clear cart
 $bot->onCallbackQueryData('clear_cart', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     $cart = Order::where('user_id', $user->id)->where('status', 'cart')->first();
 
     if ($cart) {
@@ -318,7 +347,7 @@ $bot->onCallbackQueryData('clear_cart', function (Nutgram $bot) {
 
 // Remove single item from cart
 $bot->onCallbackQueryData('remove_item:{itemId}', function (Nutgram $bot, string $itemId) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     $orderItem = OrderItem::where('id', $itemId)
         ->whereHas('order', fn ($q) => $q->where('user_id', $user->id)->where('status', 'cart'))
         ->first();
@@ -343,7 +372,7 @@ $bot->onCallbackQueryData('remove_item:{itemId}', function (Nutgram $bot, string
 
 // Place order
 $bot->onCallbackQueryData('place_order', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     $cart = Order::where('user_id', $user->id)->where('status', 'cart')->with('items')->first();
 
     if (!$cart || $cart->items->isEmpty()) {
@@ -376,7 +405,7 @@ $bot->onCallbackQueryData('place_order', function (Nutgram $bot) {
 
 // Admin panel
 $bot->onCallbackQueryData('admin_panel', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
     $keyboard = InlineKeyboardMarkup::make();
@@ -389,7 +418,7 @@ $bot->onCallbackQueryData('admin_panel', function (Nutgram $bot) {
 
 // List categories for admin
 $bot->onCallbackQueryData('admin_categories', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
     $categories = Category::orderBy('sort_order')->get();
@@ -403,7 +432,7 @@ $bot->onCallbackQueryData('admin_categories', function (Nutgram $bot) {
     }
 
     $keyboard->addRow(InlineKeyboardButton::make(text: '➕ دسته‌بندی جدید', callback_data: 'admin_addcat'));
-    $keyboard->addRow(InlineKeyboardButton::make(text: '🔙 بازگشت', callback_data: 'admin_panel'));
+    $keyboard->addRow(InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: 'admin_panel'));
 
     $bot->editMessageText(text: "📂 دسته‌بندی‌ها:\n\n✅ = فعال | ❌ = غیرفعال", reply_markup: $keyboard);
     $bot->answerCallbackQuery();
@@ -411,7 +440,7 @@ $bot->onCallbackQueryData('admin_categories', function (Nutgram $bot) {
 
 // Category detail (toggle active, edit items, delete)
 $bot->onCallbackQueryData('admin_cat:{id}', function (Nutgram $bot, string $id) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
     $cat = Category::withCount('items')->find($id);
@@ -428,7 +457,7 @@ $bot->onCallbackQueryData('admin_cat:{id}', function (Nutgram $bot, string $id) 
     ));
     $keyboard->addRow(InlineKeyboardButton::make(text: '🍽 مشاهده آیتم‌ها', callback_data: "admin_catitems:{$cat->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: '🗑 حذف دسته‌بندی', callback_data: "admin_delcat:{$cat->id}"));
-    $keyboard->addRow(InlineKeyboardButton::make(text: '🔙 بازگشت', callback_data: 'admin_categories'));
+    $keyboard->addRow(InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: 'admin_categories'));
 
     $bot->editMessageText(
         text: "📂 {$cat->name}\n\nوضعیت: {$status}\nتعداد آیتم: {$cat->items_count}",
@@ -439,7 +468,7 @@ $bot->onCallbackQueryData('admin_cat:{id}', function (Nutgram $bot, string $id) 
 
 // Toggle category active
 $bot->onCallbackQueryData('admin_togglecat:{id}', function (Nutgram $bot, string $id) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
     $cat = Category::find($id);
@@ -458,7 +487,7 @@ $bot->onCallbackQueryData('admin_togglecat:{id}', function (Nutgram $bot, string
     ));
     $keyboard->addRow(InlineKeyboardButton::make(text: '🍽 مشاهده آیتم‌ها', callback_data: "admin_catitems:{$cat->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: '🗑 حذف دسته‌بندی', callback_data: "admin_delcat:{$cat->id}"));
-    $keyboard->addRow(InlineKeyboardButton::make(text: '🔙 بازگشت', callback_data: 'admin_categories'));
+    $keyboard->addRow(InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: 'admin_categories'));
 
     $bot->editMessageText(
         text: "📂 {$cat->name}\n\nوضعیت: {$status}\nتعداد آیتم: {$cat->items_count}",
@@ -468,7 +497,7 @@ $bot->onCallbackQueryData('admin_togglecat:{id}', function (Nutgram $bot, string
 
 // Delete category
 $bot->onCallbackQueryData('admin_delcat:{id}', function (Nutgram $bot, string $id) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
     $cat = Category::find($id);
@@ -485,14 +514,14 @@ $bot->onCallbackQueryData('admin_delcat:{id}', function (Nutgram $bot, string $i
         $keyboard->addRow(InlineKeyboardButton::make(text: "{$status} {$c->name}", callback_data: "admin_cat:{$c->id}"));
     }
     $keyboard->addRow(InlineKeyboardButton::make(text: '➕ دسته‌بندی جدید', callback_data: 'admin_addcat'));
-    $keyboard->addRow(InlineKeyboardButton::make(text: '🔙 بازگشت', callback_data: 'admin_panel'));
+    $keyboard->addRow(InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: 'admin_panel'));
 
     $bot->editMessageText(text: "📂 دسته‌بندی‌ها:\n\n✅ = فعال | ❌ = غیرفعال", reply_markup: $keyboard);
 });
 
 // Show items in category (admin)
 $bot->onCallbackQueryData('admin_catitems:{id}', function (Nutgram $bot, string $id) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
     $cat = Category::with('items')->find($id);
@@ -507,7 +536,7 @@ $bot->onCallbackQueryData('admin_catitems:{id}', function (Nutgram $bot, string 
         ));
     }
     $keyboard->addRow(InlineKeyboardButton::make(text: "➕ آیتم جدید در {$cat->name}", callback_data: "admin_additem:{$cat->id}"));
-    $keyboard->addRow(InlineKeyboardButton::make(text: '🔙 بازگشت', callback_data: "admin_cat:{$cat->id}"));
+    $keyboard->addRow(InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: "admin_cat:{$cat->id}"));
 
     $bot->editMessageText(text: "🍽 آیتم‌های {$cat->name}:", reply_markup: $keyboard);
     $bot->answerCallbackQuery();
@@ -515,7 +544,7 @@ $bot->onCallbackQueryData('admin_catitems:{id}', function (Nutgram $bot, string 
 
 // Item detail (admin)
 $bot->onCallbackQueryData('admin_item:{id}', function (Nutgram $bot, string $id) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
     $item = MenuItem::with('category')->find($id);
@@ -528,7 +557,7 @@ $bot->onCallbackQueryData('admin_item:{id}', function (Nutgram $bot, string $id)
         callback_data: "admin_toggleitem:{$item->id}",
     ));
     $keyboard->addRow(InlineKeyboardButton::make(text: '🗑 حذف آیتم', callback_data: "admin_delitem:{$item->id}"));
-    $keyboard->addRow(InlineKeyboardButton::make(text: '🔙 بازگشت', callback_data: "admin_catitems:{$item->category_id}"));
+    $keyboard->addRow(InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: "admin_catitems:{$item->category_id}"));
 
     $bot->editMessageText(
         text: "🍽 {$item->name}\n💰 قیمت: " . number_format($item->price, 2) . " RM\nدسته: {$item->category->name}\nوضعیت: {$status}",
@@ -539,7 +568,7 @@ $bot->onCallbackQueryData('admin_item:{id}', function (Nutgram $bot, string $id)
 
 // Toggle item active
 $bot->onCallbackQueryData('admin_toggleitem:{id}', function (Nutgram $bot, string $id) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
     $item = MenuItem::with('category')->find($id);
@@ -554,7 +583,7 @@ $bot->onCallbackQueryData('admin_toggleitem:{id}', function (Nutgram $bot, strin
             callback_data: "admin_toggleitem:{$item->id}",
         ));
         $keyboard->addRow(InlineKeyboardButton::make(text: '🗑 حذف آیتم', callback_data: "admin_delitem:{$item->id}"));
-        $keyboard->addRow(InlineKeyboardButton::make(text: '🔙 بازگشت', callback_data: "admin_catitems:{$item->category_id}"));
+        $keyboard->addRow(InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: "admin_catitems:{$item->category_id}"));
 
         $bot->editMessageText(
             text: "🍽 {$item->name}\n💰 قیمت: " . number_format($item->price, 2) . " RM\nدسته: {$item->category->name}\nوضعیت: {$status}",
@@ -565,7 +594,7 @@ $bot->onCallbackQueryData('admin_toggleitem:{id}', function (Nutgram $bot, strin
 
 // Delete item
 $bot->onCallbackQueryData('admin_delitem:{id}', function (Nutgram $bot, string $id) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
     $item = MenuItem::find($id);
@@ -585,7 +614,7 @@ $bot->onCallbackQueryData('admin_delitem:{id}', function (Nutgram $bot, string $
             ));
         }
         $keyboard->addRow(InlineKeyboardButton::make(text: "➕ آیتم جدید در {$cat->name}", callback_data: "admin_additem:{$cat->id}"));
-        $keyboard->addRow(InlineKeyboardButton::make(text: '🔙 بازگشت', callback_data: "admin_cat:{$cat->id}"));
+        $keyboard->addRow(InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: "admin_cat:{$cat->id}"));
 
         $bot->editMessageText(text: "🍽 آیتم‌های {$cat->name}:", reply_markup: $keyboard);
     }
@@ -593,7 +622,7 @@ $bot->onCallbackQueryData('admin_delitem:{id}', function (Nutgram $bot, string $
 
 // Add category - ask for name
 $bot->onCallbackQueryData('admin_addcat', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
     $bot->sendMessage("📂 نام دسته‌بندی جدید را بفرستید:\n\n(برای لغو /cancel بزنید)");
@@ -603,7 +632,7 @@ $bot->onCallbackQueryData('admin_addcat', function (Nutgram $bot) {
 
 // Add item - ask for details
 $bot->onCallbackQueryData('admin_additem:{catId}', function (Nutgram $bot, string $catId) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
     $cat = Category::find($catId);
@@ -616,7 +645,7 @@ $bot->onCallbackQueryData('admin_additem:{catId}', function (Nutgram $bot, strin
 
 // Cancel admin action
 $bot->onCommand('cancel', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if ($user && $user->state) {
         $user->update(['state' => null]);
         $bot->sendMessage("❌ لغو شد.");
@@ -629,7 +658,7 @@ $bot->onCommand('cancel', function (Nutgram $bot) {
 |--------------------------------------------------------------------------
 */
 $bot->onMessage(function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user || !$user->state || !$user->is_admin) return;
 
     $text = $bot->message()?->text;
@@ -693,17 +722,17 @@ function showCategories(Nutgram $bot): void
 
     foreach ($categories as $category) {
         $keyboard->addRow(
-            InlineKeyboardButton::make(text: $category->name, callback_data: "category:{$category->id}"),
+            InlineKeyboardButton::make(text: "🔵 {$category->name}", callback_data: "category:{$category->id}"),
         );
     }
 
-    $user = User::where('telegram_id', $bot->userId())->first();
-    $cart = Order::where('user_id', $user->id)->where('status', 'cart')->first();
+    $user = $bot->get('user');
+    $cart = Order::where('user_id', $user->id)->where('status', 'cart')->withCount('items')->first();
 
-    if ($cart && $cart->items()->count() > 0) {
+    if ($cart && $cart->items_count > 0) {
         $keyboard->addRow(
             InlineKeyboardButton::make(
-                text: '📋 سبد خرید (' . number_format($cart->total_price, 2) . ' RM)',
+                text: '🔵 سبد خرید (' . number_format($cart->total_price, 2) . ' RM)',
                 callback_data: 'view_cart',
             ),
         );
@@ -726,7 +755,7 @@ function showAdminPanel(Nutgram $bot): void
 
 // Admin items list (all categories)
 $bot->onCallbackQueryData('admin_items', function (Nutgram $bot) {
-    $user = User::where('telegram_id', $bot->userId())->first();
+    $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
     $categories = Category::orderBy('sort_order')->get();
@@ -738,10 +767,25 @@ $bot->onCallbackQueryData('admin_items', function (Nutgram $bot) {
             callback_data: "admin_catitems:{$cat->id}",
         ));
     }
-    $keyboard->addRow(InlineKeyboardButton::make(text: '🔙 بازگشت', callback_data: 'admin_panel'));
+    $keyboard->addRow(InlineKeyboardButton::make(text: '🔴 بازگشت', callback_data: 'admin_panel'));
 
     $bot->editMessageText(text: "🍽 یک دسته‌بندی انتخاب کنید تا آیتم‌هایش را ببینید:", reply_markup: $keyboard);
     $bot->answerCallbackQuery();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Fallback - Unknown messages
+|--------------------------------------------------------------------------
+*/
+$bot->fallback(function (Nutgram $bot) {
+    $user = $bot->get('user');
+    if (!$user || !$user->is_registered) return;
+
+    $bot->sendMessage(
+        text: "❌ متوجه نشدم! لطفاً از منوی زیر استفاده کنید:",
+        reply_markup: mainMenuKeyboard($user),
+    );
 });
 
 function notifyAdmins(Nutgram $bot, Order $order, User $customer): void

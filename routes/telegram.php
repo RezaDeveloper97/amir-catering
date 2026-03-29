@@ -300,11 +300,11 @@ $bot->onCallbackQueryData('category:{id}', function (TelegramBot $bot, string $i
         InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: 'back_to_categories'),
     );
 
+    $bot->answerCallbackQuery();
     $bot->editMessageText(
         text: trans_user('select_item', $user, ['name' => $category->localizedName($user)]),
         reply_markup: $keyboard,
     );
-    $bot->answerCallbackQuery();
 });
 
 // Select item - show quantity selection
@@ -322,21 +322,25 @@ $bot->onCallbackQueryData('item:{id}', function (TelegramBot $bot, string $id) {
         InlineKeyboardButton::make(text: '1', callback_data: "qty:{$item->id}:1"),
         InlineKeyboardButton::make(text: '2', callback_data: "qty:{$item->id}:2"),
         InlineKeyboardButton::make(text: '3', callback_data: "qty:{$item->id}:3"),
-    );
-    $keyboard->addRow(
         InlineKeyboardButton::make(text: '4', callback_data: "qty:{$item->id}:4"),
         InlineKeyboardButton::make(text: '5', callback_data: "qty:{$item->id}:5"),
+    );
+    $keyboard->addRow(
         InlineKeyboardButton::make(text: '6', callback_data: "qty:{$item->id}:6"),
+        InlineKeyboardButton::make(text: '7', callback_data: "qty:{$item->id}:7"),
+        InlineKeyboardButton::make(text: '8', callback_data: "qty:{$item->id}:8"),
+        InlineKeyboardButton::make(text: '9', callback_data: "qty:{$item->id}:9"),
+        InlineKeyboardButton::make(text: '10', callback_data: "qty:{$item->id}:10"),
     );
     $keyboard->addRow(
         InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: "category:{$item->category_id}"),
     );
 
+    $bot->answerCallbackQuery();
     $bot->editMessageText(
         text: trans_user('item_detail', $user, ['name' => $item->localizedName($user), 'price' => number_format($item->price, 2)]),
         reply_markup: $keyboard,
     );
-    $bot->answerCallbackQuery();
 });
 
 // Add item to cart
@@ -389,11 +393,11 @@ $bot->onCallbackQueryData('qty:{itemId}:{quantity}', function (TelegramBot $bot,
         InlineKeyboardButton::make(text: trans_user('btn_place_order', $user), callback_data: 'place_order'),
     );
 
+    $bot->answerCallbackQuery(text: trans_user('added_toast', $user));
     $bot->editMessageText(
         text: trans_user('added_to_cart', $user, ['name' => $item->localizedName($user), 'qty' => $quantity, 'total' => number_format($total, 2)]),
         reply_markup: $keyboard,
     );
-    $bot->answerCallbackQuery(text: trans_user('added_toast', $user));
 });
 
 // Back to categories
@@ -419,11 +423,11 @@ $bot->onCallbackQueryData('back_to_categories', function (TelegramBot $bot) {
         );
     }
 
+    $bot->answerCallbackQuery();
     $bot->editMessageText(
         text: trans_user('menu_title', $user),
         reply_markup: $keyboard,
     );
-    $bot->answerCallbackQuery();
 });
 
 // View cart
@@ -454,8 +458,8 @@ $bot->onCallbackQueryData('view_cart', function (TelegramBot $bot) {
         InlineKeyboardButton::make(text: trans_user('btn_clear_cart', $user), callback_data: 'clear_cart'),
     );
 
-    $bot->editMessageText(text: $text, reply_markup: $keyboard);
     $bot->answerCallbackQuery();
+    $bot->editMessageText(text: $text, reply_markup: $keyboard);
 });
 
 // Clear cart
@@ -468,8 +472,8 @@ $bot->onCallbackQueryData('clear_cart', function (TelegramBot $bot) {
         $cart->delete();
     }
 
-    $bot->editMessageText(text: trans_user('cart_cleared', $user));
     $bot->answerCallbackQuery(text: trans_user('cart_cleared_toast', $user));
+    $bot->editMessageText(text: trans_user('cart_cleared', $user));
 });
 
 // Remove single item from cart
@@ -488,8 +492,8 @@ $bot->onCallbackQueryData('remove_item:{itemId}', function (TelegramBot $bot, st
 
         if ($order->items()->count() === 0) {
             $order->delete();
-            $bot->editMessageText(text: trans_user('cart_cleared', $user));
             $bot->answerCallbackQuery(text: trans_user('item_removed_toast', $user));
+            $bot->editMessageText(text: trans_user('cart_cleared', $user));
             return;
         }
     }
@@ -518,8 +522,8 @@ $bot->onCallbackQueryData('place_order', function (TelegramBot $bot) {
     $text .= trans_user('cart_total', $user, ['total' => number_format($cart->total_price, 2)]);
     $text .= trans_user('order_preparing', $user);
 
-    $bot->editMessageText(text: $text);
     $bot->answerCallbackQuery(text: trans_user('order_placed_toast', $user));
+    $bot->editMessageText(text: $text);
 
     notifyAdmins($bot, $cart, $user);
 });
@@ -549,8 +553,8 @@ $bot->onCallbackQueryData('admin_categories', function (TelegramBot $bot) {
     }
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_new_category', $user), callback_data: 'admin_addcat'));
 
-    $bot->editMessageText(text: trans_user('categories_header', $user), reply_markup: $keyboard);
     $bot->answerCallbackQuery();
+    $bot->editMessageText(text: trans_user('categories_header', $user), reply_markup: $keyboard);
 });
 
 // Category detail (toggle active, edit items, delete)
@@ -578,11 +582,11 @@ $bot->onCallbackQueryData('admin_cat:{id}', function (TelegramBot $bot, string $
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_delete_category', $user), callback_data: "admin_delcat:{$cat->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: 'admin_categories'));
 
+    $bot->answerCallbackQuery();
     $bot->editMessageText(
         text: trans_user('category_detail', $user, ['name' => $cat->localizedName($user), 'status' => $status, 'count' => $cat->items_count]),
         reply_markup: $keyboard,
     );
-    $bot->answerCallbackQuery();
 });
 
 // Toggle category active
@@ -675,8 +679,8 @@ $bot->onCallbackQueryData('admin_catitems:{id}', function (TelegramBot $bot, str
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_new_item_in', $user, ['name' => $cat->localizedName($user)]), callback_data: "admin_additem:{$cat->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: "admin_cat:{$cat->id}"));
 
-    $bot->editMessageText(text: trans_user('items_in_category', $user, ['name' => $cat->localizedName($user)]), reply_markup: $keyboard);
     $bot->answerCallbackQuery();
+    $bot->editMessageText(text: trans_user('items_in_category', $user, ['name' => $cat->localizedName($user)]), reply_markup: $keyboard);
 });
 
 // Item detail (admin)
@@ -703,6 +707,7 @@ $bot->onCallbackQueryData('admin_item:{id}', function (TelegramBot $bot, string 
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_delete_item', $user), callback_data: "admin_delitem:{$item->id}"));
     $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: "admin_catitems:{$item->category_id}"));
 
+    $bot->answerCallbackQuery();
     $bot->editMessageText(
         text: trans_user('item_detail_admin', $user, [
             'name' => $item->localizedName($user),
@@ -712,7 +717,6 @@ $bot->onCallbackQueryData('admin_item:{id}', function (TelegramBot $bot, string 
         ]),
         reply_markup: $keyboard,
     );
-    $bot->answerCallbackQuery();
 });
 
 // Toggle item active

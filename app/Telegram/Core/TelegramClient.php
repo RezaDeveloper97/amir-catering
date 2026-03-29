@@ -24,7 +24,7 @@ class TelegramClient
         $channel = config('telegram.log_channel', 'null');
 
         try {
-            $response = Http::post($this->baseUrl . $method, $params);
+            $response = Http::connectTimeout(5)->timeout(10)->post($this->baseUrl . $method, $params);
             $body = $response->json();
 
             if (!($body['ok'] ?? false)) {

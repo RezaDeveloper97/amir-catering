@@ -94,20 +94,20 @@ return [
     'btn_delete_item' => '🗑 Padam Item',
 
     // Admin - Add category/item
-    'add_category_prompt' => "📂 Hantar nama kategori baharu dalam 3 bahasa:\n<b>فارسی | English | Melayu</b>\n\nContoh: نوشیدنی | Beverages | Minuman\n\n(Hantar /cancel untuk batal)",
-    'add_item_prompt' => "🍽 Hantar nama item baharu dalam 3 bahasa dan harga:\n<b>فارسی | English | Melayu - Harga</b>\n\nContoh: چلو کباب | Chelo Kabab | Chelo Kabab - 25.00\n\n(Hantar /cancel untuk batal)",
+    'add_category_prompt' => "📂 Hantar nama kategori baharu dalam 3 bahasa (setiap satu dalam baris baharu):\n<b>Baris 1: فارسی\nBaris 2: English\nBaris 3: Melayu</b>\n\nContoh:\nنوشیدنی\nBeverages\nMinuman\n\n(Hantar /cancel untuk batal)",
+    'add_item_prompt' => "🍽 Hantar nama item baharu dalam 3 bahasa dan harga (setiap satu dalam baris baharu):\n<b>Baris 1: فارسی\nBaris 2: English\nBaris 3: Melayu\nBaris 4: Harga</b>\n\nContoh:\nچلو کباب\nChelo Kabab\nChelo Kabab\n25.00\n\n(Hantar /cancel untuk batal)",
     'category_added' => "✅ Kategori \":name\" ditambah!\n\nUntuk pengurusan: /admin",
     'category_not_found_err' => '❌ Kategori tidak dijumpai.',
-    'format_error_category' => "❌ Format salah. Sila hantar dalam format ini:\nفارسی | English | Melayu\n\nContoh: نوشیدنی | Beverages | Minuman",
-    'format_error_item' => "❌ Format salah. Sila hantar dalam format ini:\nفارسی | English | Melayu - Harga\n\nContoh: چلو کباب | Chelo Kabab | Chelo Kabab - 25.00",
+    'format_error_category' => "❌ Format salah. Sila hantar setiap bahasa dalam baris baharu:\n\nContoh:\nنوشیدنی\nBeverages\nMinuman",
+    'format_error_item' => "❌ Format salah. Sila hantar setiap bahasa dan harga dalam baris baharu:\n\nContoh:\nچلو کباب\nChelo Kabab\nChelo Kabab\n25.00",
     'price_error' => '❌ Harga mestilah nombor positif.',
     'item_added' => "✅ \":name\" dengan harga :price RM ditambah ke :category!\n\nUntuk pengurusan: /admin",
 
     // Admin - Edit category/item
     'btn_edit_category' => '✏️ Edit Kategori',
     'btn_edit_item' => '✏️ Edit Item',
-    'edit_category_prompt' => "✏️ Hantar nama baharu untuk \":name\" dalam 3 bahasa:\n<b>فارسی | English | Melayu</b>\n\n(Hantar /cancel untuk batal)",
-    'edit_item_prompt' => "✏️ Hantar nama dan harga baharu untuk \":name\":\n<b>فارسی | English | Melayu - Harga</b>\n\n(Hantar /cancel untuk batal)",
+    'edit_category_prompt' => "✏️ Hantar nama baharu untuk \":name\" dalam 3 bahasa (setiap satu dalam baris baharu):\n<b>Baris 1: فارسی\nBaris 2: English\nBaris 3: Melayu</b>\n\n(Hantar /cancel untuk batal)",
+    'edit_item_prompt' => "✏️ Hantar nama dan harga baharu untuk \":name\" (setiap satu dalam baris baharu):\n<b>Baris 1: فارسی\nBaris 2: English\nBaris 3: Melayu\nBaris 4: Harga</b>\n\n(Hantar /cancel untuk batal)",
     'category_updated' => '✅ Kategori ":name" dikemaskini!',
     'item_updated' => '✅ ":name" dikemaskini ke :price RM!',
 

@@ -767,27 +767,39 @@ $bot->onCallbackQueryData('admin_additem:{catId}', function (TelegramBot $bot, s
 // Edit category - ask for new name
 $bot->onCallbackQueryData('admin_editcat:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
-    if (!$user?->is_admin) return;
+    if (!$user?->is_admin) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $cat = Category::find($id);
-    if (!$cat) return;
+    if (!$cat) {
+        $bot->answerCallbackQuery(text: trans_user('not_found', $user));
+        return;
+    }
 
+    $bot->answerCallbackQuery();
     $bot->sendMessage(trans_user('edit_category_prompt', $user, ['name' => $cat->localizedName($user)]), parse_mode: 'HTML');
     $user->update(['state' => "waiting_editcat:{$id}"]);
-    $bot->answerCallbackQuery();
 });
 
 // Edit item - ask for new details
 $bot->onCallbackQueryData('admin_edititem:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
-    if (!$user?->is_admin) return;
+    if (!$user?->is_admin) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $item = MenuItem::find($id);
-    if (!$item) return;
+    if (!$item) {
+        $bot->answerCallbackQuery(text: trans_user('not_found', $user));
+        return;
+    }
 
+    $bot->answerCallbackQuery();
     $bot->sendMessage(trans_user('edit_item_prompt', $user, ['name' => $item->localizedName($user)]), parse_mode: 'HTML');
     $user->update(['state' => "waiting_edititem:{$id}"]);
-    $bot->answerCallbackQuery();
 });
 
 // Cancel admin action
@@ -826,8 +838,8 @@ $bot->onMessage(function (TelegramBot $bot) {
     // Handle admin state input (add category / add item)
     if ($user->is_admin && $user->state && $text) {
         if ($user->state === 'waiting_category_name') {
-            // Expected format: فارسی | English | Melayu
-            $names = array_map('trim', explode('|', $text));
+            // Expected format: 3 lines (فارسی \n English \n Melayu)
+            $names = array_map('trim', explode("\n", $text));
             if (count($names) < 3) {
                 $bot->sendMessage(trans_user('format_error_category', $user), parse_mode: 'HTML');
                 return;
@@ -853,21 +865,15 @@ $bot->onMessage(function (TelegramBot $bot) {
                 return;
             }
 
-            // Expected format: فارسی | English | Melayu - price
-            $parts = explode('-', $text);
-            if (count($parts) < 2) {
+            // Expected format: 4 lines (فارسی \n English \n Melayu \n price)
+            $lines = array_map('trim', explode("\n", $text));
+            if (count($lines) < 4) {
                 $bot->sendMessage(trans_user('format_error_item', $user), parse_mode: 'HTML');
                 return;
             }
 
-            $price = (float) trim(array_pop($parts));
-            $namesPart = implode('-', $parts);
-            $names = array_map('trim', explode('|', $namesPart));
-
-            if (count($names) < 3) {
-                $bot->sendMessage(trans_user('format_error_item', $user), parse_mode: 'HTML');
-                return;
-            }
+            $names = array_slice($lines, 0, 3);
+            $price = (float) $lines[3];
 
             if ($price <= 0) {
                 $bot->sendMessage(trans_user('price_error', $user));
@@ -901,7 +907,7 @@ $bot->onMessage(function (TelegramBot $bot) {
                 return;
             }
 
-            $names = array_map('trim', explode('|', $text));
+            $names = array_map('trim', explode("\n", $text));
             if (count($names) < 3) {
                 $bot->sendMessage(trans_user('format_error_category', $user), parse_mode: 'HTML');
                 return;
@@ -922,21 +928,15 @@ $bot->onMessage(function (TelegramBot $bot) {
                 return;
             }
 
-            // Expected format: فارسی | English | Melayu - price
-            $parts = explode('-', $text);
-            if (count($parts) < 2) {
+            // Expected format: 4 lines (فارسی \n English \n Melayu \n price)
+            $lines = array_map('trim', explode("\n", $text));
+            if (count($lines) < 4) {
                 $bot->sendMessage(trans_user('format_error_item', $user), parse_mode: 'HTML');
                 return;
             }
 
-            $price = (float) trim(array_pop($parts));
-            $namesPart = implode('-', $parts);
-            $names = array_map('trim', explode('|', $namesPart));
-
-            if (count($names) < 3) {
-                $bot->sendMessage(trans_user('format_error_item', $user), parse_mode: 'HTML');
-                return;
-            }
+            $names = array_slice($lines, 0, 3);
+            $price = (float) $lines[3];
 
             if ($price <= 0) {
                 $bot->sendMessage(trans_user('price_error', $user));

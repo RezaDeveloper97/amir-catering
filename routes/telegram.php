@@ -158,7 +158,6 @@ $bot->onText('(🛒 سفارش|🛒 Order|🛒 Pesanan)', function (TelegramBot 
         return;
     }
 
-    $bot->sendMessage(text: trans_user('showing_menu', $user), reply_markup: backToMenuKeyboard($user));
     showCategories($bot, $user);
 });
 
@@ -170,7 +169,6 @@ $bot->onText('(📍 تغییر آدرس|📍 Change Address|📍 Tukar Alamat)',
         return;
     }
 
-    $bot->sendMessage(text: trans_user('changing_address', $user), reply_markup: backToMenuKeyboard($user));
     ChangeAddressConversation::begin($bot);
 });
 

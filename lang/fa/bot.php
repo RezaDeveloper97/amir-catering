@@ -94,20 +94,20 @@ return [
     'btn_delete_item' => '🗑 حذف آیتم',
 
     // Admin - Add category/item
-    'add_category_prompt' => "📂 نام دسته‌بندی جدید را به ۳ زبان بفرستید:\n<b>فارسی | English | Melayu</b>\n\nمثال: نوشیدنی | Beverages | Minuman\n\n(برای لغو /cancel بزنید)",
-    'add_item_prompt' => "🍽 نام آیتم جدید را به ۳ زبان و قیمت بفرستید:\n<b>فارسی | English | Melayu - قیمت</b>\n\nمثال: چلو کباب | Chelo Kabab | Chelo Kabab - 25.00\n\n(برای لغو /cancel بزنید)",
+    'add_category_prompt' => "📂 نام دسته‌بندی جدید را به ۳ زبان بفرستید (هر زبان در یک خط):\n<b>خط ۱: فارسی\nخط ۲: English\nخط ۳: Melayu</b>\n\nمثال:\nنوشیدنی\nBeverages\nMinuman\n\n(برای لغو /cancel بزنید)",
+    'add_item_prompt' => "🍽 نام آیتم جدید را به ۳ زبان و قیمت بفرستید (هر کدام در یک خط):\n<b>خط ۱: فارسی\nخط ۲: English\nخط ۳: Melayu\nخط ۴: قیمت</b>\n\nمثال:\nچلو کباب\nChelo Kabab\nChelo Kabab\n25.00\n\n(برای لغو /cancel بزنید)",
     'category_added' => "✅ دسته‌بندی «:name» اضافه شد!\n\nبرای مدیریت: /admin",
     'category_not_found_err' => '❌ دسته‌بندی یافت نشد.',
-    'format_error_category' => "❌ فرمت اشتباه. لطفاً به فرمت زیر بفرستید:\nفارسی | English | Melayu\n\nمثال: نوشیدنی | Beverages | Minuman",
-    'format_error_item' => "❌ فرمت اشتباه. لطفاً به فرمت زیر بفرستید:\nفارسی | English | Melayu - قیمت\n\nمثال: چلو کباب | Chelo Kabab | Chelo Kabab - 25.00",
+    'format_error_category' => "❌ فرمت اشتباه. لطفاً هر زبان را در یک خط بفرستید:\n\nمثال:\nنوشیدنی\nBeverages\nMinuman",
+    'format_error_item' => "❌ فرمت اشتباه. لطفاً هر زبان و قیمت را در یک خط بفرستید:\n\nمثال:\nچلو کباب\nChelo Kabab\nChelo Kabab\n25.00",
     'price_error' => '❌ قیمت باید عدد مثبت باشد.',
     'item_added' => "✅ «:name» با قیمت :price RM به :category اضافه شد!\n\nبرای مدیریت: /admin",
 
     // Admin - Edit category/item
     'btn_edit_category' => '✏️ ویرایش دسته‌بندی',
     'btn_edit_item' => '✏️ ویرایش آیتم',
-    'edit_category_prompt' => "✏️ نام جدید دسته‌بندی «:name» را به ۳ زبان بفرستید:\n<b>فارسی | English | Melayu</b>\n\n(برای لغو /cancel بزنید)",
-    'edit_item_prompt' => "✏️ نام و قیمت جدید «:name» را بفرستید:\n<b>فارسی | English | Melayu - قیمت</b>\n\n(برای لغو /cancel بزنید)",
+    'edit_category_prompt' => "✏️ نام جدید دسته‌بندی «:name» را به ۳ زبان بفرستید (هر زبان در یک خط):\n<b>خط ۱: فارسی\nخط ۲: English\nخط ۳: Melayu</b>\n\n(برای لغو /cancel بزنید)",
+    'edit_item_prompt' => "✏️ نام و قیمت جدید «:name» را بفرستید (هر کدام در یک خط):\n<b>خط ۱: فارسی\nخط ۲: English\nخط ۳: Melayu\nخط ۴: قیمت</b>\n\n(برای لغو /cancel بزنید)",
     'category_updated' => '✅ دسته‌بندی «:name» ویرایش شد!',
     'item_updated' => '✅ «:name» با قیمت :price RM ویرایش شد!',
 

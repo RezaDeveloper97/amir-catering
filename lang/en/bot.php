@@ -94,20 +94,20 @@ return [
     'btn_delete_item' => '🗑 Delete Item',
 
     // Admin - Add category/item
-    'add_category_prompt' => "📂 Send the new category name in 3 languages:\n<b>فارسی | English | Melayu</b>\n\nExample: نوشیدنی | Beverages | Minuman\n\n(Send /cancel to cancel)",
-    'add_item_prompt' => "🍽 Send the new item name in 3 languages and price:\n<b>فارسی | English | Melayu - Price</b>\n\nExample: چلو کباب | Chelo Kabab | Chelo Kabab - 25.00\n\n(Send /cancel to cancel)",
+    'add_category_prompt' => "📂 Send the new category name in 3 languages (each on a new line):\n<b>Line 1: فارسی\nLine 2: English\nLine 3: Melayu</b>\n\nExample:\nنوشیدنی\nBeverages\nMinuman\n\n(Send /cancel to cancel)",
+    'add_item_prompt' => "🍽 Send the new item name in 3 languages and price (each on a new line):\n<b>Line 1: فارسی\nLine 2: English\nLine 3: Melayu\nLine 4: Price</b>\n\nExample:\nچلو کباب\nChelo Kabab\nChelo Kabab\n25.00\n\n(Send /cancel to cancel)",
     'category_added' => "✅ Category \":name\" added!\n\nFor management: /admin",
     'category_not_found_err' => '❌ Category not found.',
-    'format_error_category' => "❌ Wrong format. Please send in this format:\nفارسی | English | Melayu\n\nExample: نوشیدنی | Beverages | Minuman",
-    'format_error_item' => "❌ Wrong format. Please send in this format:\nفارسی | English | Melayu - Price\n\nExample: چلو کباب | Chelo Kabab | Chelo Kabab - 25.00",
+    'format_error_category' => "❌ Wrong format. Please send each language on a new line:\n\nExample:\nنوشیدنی\nBeverages\nMinuman",
+    'format_error_item' => "❌ Wrong format. Please send each language and price on a new line:\n\nExample:\nچلو کباب\nChelo Kabab\nChelo Kabab\n25.00",
     'price_error' => '❌ Price must be a positive number.',
     'item_added' => "✅ \":name\" with price :price RM added to :category!\n\nFor management: /admin",
 
     // Admin - Edit category/item
     'btn_edit_category' => '✏️ Edit Category',
     'btn_edit_item' => '✏️ Edit Item',
-    'edit_category_prompt' => "✏️ Send the new name for \":name\" in 3 languages:\n<b>فارسی | English | Melayu</b>\n\n(Send /cancel to cancel)",
-    'edit_item_prompt' => "✏️ Send the new name and price for \":name\":\n<b>فارسی | English | Melayu - Price</b>\n\n(Send /cancel to cancel)",
+    'edit_category_prompt' => "✏️ Send the new name for \":name\" in 3 languages (each on a new line):\n<b>Line 1: فارسی\nLine 2: English\nLine 3: Melayu</b>\n\n(Send /cancel to cancel)",
+    'edit_item_prompt' => "✏️ Send the new name and price for \":name\" (each on a new line):\n<b>Line 1: فارسی\nLine 2: English\nLine 3: Melayu\nLine 4: Price</b>\n\n(Send /cancel to cancel)",
     'category_updated' => '✅ Category ":name" updated!',
     'item_updated' => '✅ ":name" updated to :price RM!',
 

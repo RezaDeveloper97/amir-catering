@@ -9,6 +9,23 @@ use App\Telegram\Core\Keyboard\ReplyKeyboardMarkup;
 
 class ChangeAddressConversation extends Conversation
 {
+    /** Back-to-menu button texts across all languages */
+    private const BACK_BUTTONS = ['🔴 بازگشت به منو', '🔴 Back to Menu', '🔴 Kembali ke Menu'];
+
+    private function isBackButton(?string $text): bool
+    {
+        return $text !== null && in_array($text, self::BACK_BUTTONS);
+    }
+
+    private function handleBack(User $user): void
+    {
+        $this->end();
+        $this->bot->sendMessage(
+            text: trans_user('choose_from_menu', $user),
+            reply_markup: mainMenuKeyboard($user),
+        );
+    }
+
     public function start(): void
     {
         $user = User::where('telegram_id', $this->bot->userId())->first();
@@ -20,6 +37,11 @@ class ChangeAddressConversation extends Conversation
     {
         $address = $this->bot->message()?->text;
         $user    = User::where('telegram_id', $this->bot->userId())->first();
+
+        if ($this->isBackButton($address)) {
+            $this->handleBack($user);
+            return;
+        }
 
         if (empty($address)) {
             $this->bot->sendMessage(trans_user('addr_text_only', $user));
@@ -41,8 +63,14 @@ class ChangeAddressConversation extends Conversation
 
     public function handleLocation(): void
     {
+        $user = User::where('telegram_id', $this->bot->userId())->first();
+
+        if ($this->isBackButton($this->bot->message()?->text)) {
+            $this->handleBack($user);
+            return;
+        }
+
         $location = $this->bot->message()?->location;
-        $user     = User::where('telegram_id', $this->bot->userId())->first();
 
         if ($location === null) {
             $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true, one_time_keyboard: true)

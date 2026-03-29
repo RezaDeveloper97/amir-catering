@@ -1,6 +1,6 @@
 <?php
 
-/** @var SergiX44\Nutgram\Nutgram $bot */
+/** @var App\Telegram\Core\TelegramBot $bot */
 
 use App\Models\Category;
 use App\Models\MenuItem;
@@ -9,16 +9,16 @@ use App\Models\OrderItem;
 use App\Models\User;
 use App\Telegram\Conversations\ChangeAddressConversation;
 use App\Telegram\Conversations\RegistrationConversation;
-use SergiX44\Nutgram\Nutgram;
-use SergiX44\Nutgram\Telegram\Types\Keyboard\InlineKeyboardButton;
-use SergiX44\Nutgram\Telegram\Types\Keyboard\InlineKeyboardMarkup;
+use App\Telegram\Core\TelegramBot;
+use App\Telegram\Core\Keyboard\InlineKeyboardButton;
+use App\Telegram\Core\Keyboard\InlineKeyboardMarkup;
 
 /*
 |--------------------------------------------------------------------------
 | Middleware - Resolve user once per request
 |--------------------------------------------------------------------------
 */
-$bot->middleware(function (Nutgram $bot, $next) {
+$bot->middleware(function (TelegramBot $bot, $next) {
     $userId = $bot->userId();
     if ($userId) {
         $user = User::where('telegram_id', $userId)->first();
@@ -32,7 +32,7 @@ $bot->middleware(function (Nutgram $bot, $next) {
 | Start Command
 |--------------------------------------------------------------------------
 */
-$bot->onCommand('start', function (Nutgram $bot) {
+$bot->onCommand('start', function (TelegramBot $bot) {
     $user = User::firstOrCreate(
         ['telegram_id' => $bot->userId()],
         ['first_name' => $bot->user()?->first_name],
@@ -67,7 +67,7 @@ $bot->onCommand('start', function (Nutgram $bot) {
 | Language Command
 |--------------------------------------------------------------------------
 */
-$bot->onCommand('lang', function (Nutgram $bot) {
+$bot->onCommand('lang', function (TelegramBot $bot) {
     $keyboard = InlineKeyboardMarkup::make();
     $keyboard->addRow(InlineKeyboardButton::make(text: '🇮🇷 فارسی', callback_data: 'set_lang:fa'));
     $keyboard->addRow(InlineKeyboardButton::make(text: '🇬🇧 English', callback_data: 'set_lang:en'));
@@ -85,7 +85,7 @@ $bot->onCommand('lang', function (Nutgram $bot) {
 | Language Selection Callbacks
 |--------------------------------------------------------------------------
 */
-$bot->onCallbackQueryData('set_lang:{locale}', function (Nutgram $bot, string $locale) {
+$bot->onCallbackQueryData('set_lang:{locale}', function (TelegramBot $bot, string $locale) {
     if (!in_array($locale, ['fa', 'en', 'ms'])) return;
 
     $user = $bot->get('user');
@@ -114,7 +114,7 @@ $bot->onCallbackQueryData('set_lang:{locale}', function (Nutgram $bot, string $l
 | Admin Secret Command
 |--------------------------------------------------------------------------
 */
-$bot->onText('adminNowPlz', function (Nutgram $bot) {
+$bot->onText('adminNowPlz', function (TelegramBot $bot) {
     $user = $bot->get('user');
     if ($user) {
         $user->update(['is_admin' => true]);
@@ -130,7 +130,7 @@ $bot->onText('adminNowPlz', function (Nutgram $bot) {
 | Admin Menu Command
 |--------------------------------------------------------------------------
 */
-$bot->onCommand('admin', function (Nutgram $bot) {
+$bot->onCommand('admin', function (TelegramBot $bot) {
     $user = $bot->get('user');
     if (!$user || !$user->is_admin) {
         $bot->sendMessage(trans_user('no_admin_access', $user));
@@ -144,7 +144,7 @@ $bot->onCommand('admin', function (Nutgram $bot) {
 | Main Menu Text Handlers (regex to match all languages)
 |--------------------------------------------------------------------------
 */
-$bot->onText('(🛒 سفارش|🛒 Order|🛒 Pesanan)', function (Nutgram $bot) {
+$bot->onText('(🛒 سفارش|🛒 Order|🛒 Pesanan)', function (TelegramBot $bot) {
     $user = $bot->get('user');
 
     if (!$user || !$user->is_registered) {
@@ -156,7 +156,7 @@ $bot->onText('(🛒 سفارش|🛒 Order|🛒 Pesanan)', function (Nutgram $bot
     showCategories($bot, $user);
 });
 
-$bot->onText('(📍 تغییر آدرس|📍 Change Address|📍 Tukar Alamat)', function (Nutgram $bot) {
+$bot->onText('(📍 تغییر آدرس|📍 Change Address|📍 Tukar Alamat)', function (TelegramBot $bot) {
     $user = $bot->get('user');
 
     if (!$user || !$user->is_registered) {
@@ -168,7 +168,7 @@ $bot->onText('(📍 تغییر آدرس|📍 Change Address|📍 Tukar Alamat)',
     ChangeAddressConversation::begin($bot);
 });
 
-$bot->onText('(⚙️ پنل مدیریت|⚙️ Admin Panel|⚙️ Panel Admin)', function (Nutgram $bot) {
+$bot->onText('(⚙️ پنل مدیریت|⚙️ Admin Panel|⚙️ Panel Admin)', function (TelegramBot $bot) {
     $user = $bot->get('user');
 
     if (!$user || !$user->is_admin) {
@@ -179,7 +179,7 @@ $bot->onText('(⚙️ پنل مدیریت|⚙️ Admin Panel|⚙️ Panel Admin)
     showAdminPanel($bot, $user);
 });
 
-$bot->onText('(📂 مدیریت دسته‌بندی‌ها|📂 Manage Categories|📂 Urus Kategori)', function (Nutgram $bot) {
+$bot->onText('(📂 مدیریت دسته‌بندی‌ها|📂 Manage Categories|📂 Urus Kategori)', function (TelegramBot $bot) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -198,7 +198,7 @@ $bot->onText('(📂 مدیریت دسته‌بندی‌ها|📂 Manage Categori
     $bot->sendMessage(text: trans_user('categories_header', $user), reply_markup: $keyboard);
 });
 
-$bot->onText('(🍽 مدیریت آیتم‌ها|🍽 Manage Items|🍽 Urus Item)', function (Nutgram $bot) {
+$bot->onText('(🍽 مدیریت آیتم‌ها|🍽 Manage Items|🍽 Urus Item)', function (TelegramBot $bot) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -215,7 +215,7 @@ $bot->onText('(🍽 مدیریت آیتم‌ها|🍽 Manage Items|🍽 Urus Ite
     $bot->sendMessage(text: trans_user('items_select_category', $user), reply_markup: $keyboard);
 });
 
-$bot->onText('(📋 سفارشات من|📋 My Orders|📋 Pesanan Saya)', function (Nutgram $bot) {
+$bot->onText('(📋 سفارشات من|📋 My Orders|📋 Pesanan Saya)', function (TelegramBot $bot) {
     $user = $bot->get('user');
 
     if (!$user || !$user->is_registered) {
@@ -251,7 +251,7 @@ $bot->onText('(📋 سفارشات من|📋 My Orders|📋 Pesanan Saya)', func
 });
 
 // Language button handler
-$bot->onText('(🌐 زبان|🌐 Language|🌐 Bahasa)', function (Nutgram $bot) {
+$bot->onText('(🌐 زبان|🌐 Language|🌐 Bahasa)', function (TelegramBot $bot) {
     $user = $bot->get('user');
 
     $keyboard = InlineKeyboardMarkup::make();
@@ -272,7 +272,7 @@ $bot->onText('(🌐 زبان|🌐 Language|🌐 Bahasa)', function (Nutgram $bot
 */
 
 // Show category items
-$bot->onCallbackQueryData('category:{id}', function (Nutgram $bot, string $id) {
+$bot->onCallbackQueryData('category:{id}', function (TelegramBot $bot, string $id) {
     $category = Category::with(['items' => fn($q) => $q->where('is_active', true)])->find($id);
     $user = $bot->get('user');
 
@@ -304,7 +304,7 @@ $bot->onCallbackQueryData('category:{id}', function (Nutgram $bot, string $id) {
 });
 
 // Select item - show quantity selection
-$bot->onCallbackQueryData('item:{id}', function (Nutgram $bot, string $id) {
+$bot->onCallbackQueryData('item:{id}', function (TelegramBot $bot, string $id) {
     $item = MenuItem::with('category')->find($id);
     $user = $bot->get('user');
 
@@ -336,7 +336,7 @@ $bot->onCallbackQueryData('item:{id}', function (Nutgram $bot, string $id) {
 });
 
 // Add item to cart
-$bot->onCallbackQueryData('qty:{itemId}:{quantity}', function (Nutgram $bot, string $itemId, string $quantity) {
+$bot->onCallbackQueryData('qty:{itemId}:{quantity}', function (TelegramBot $bot, string $itemId, string $quantity) {
     $item = MenuItem::with('category')->find($itemId);
     $user = $bot->get('user');
 
@@ -393,7 +393,7 @@ $bot->onCallbackQueryData('qty:{itemId}:{quantity}', function (Nutgram $bot, str
 });
 
 // Back to categories
-$bot->onCallbackQueryData('back_to_categories', function (Nutgram $bot) {
+$bot->onCallbackQueryData('back_to_categories', function (TelegramBot $bot) {
     $user = $bot->get('user');
     $categories = Category::where('is_active', true)->orderBy('sort_order')->get();
     $keyboard = InlineKeyboardMarkup::make();
@@ -423,7 +423,7 @@ $bot->onCallbackQueryData('back_to_categories', function (Nutgram $bot) {
 });
 
 // View cart
-$bot->onCallbackQueryData('view_cart', function (Nutgram $bot) {
+$bot->onCallbackQueryData('view_cart', function (TelegramBot $bot) {
     $user = $bot->get('user');
     $cart = Order::where('user_id', $user->id)->where('status', 'cart')->with('items')->first();
 
@@ -455,7 +455,7 @@ $bot->onCallbackQueryData('view_cart', function (Nutgram $bot) {
 });
 
 // Clear cart
-$bot->onCallbackQueryData('clear_cart', function (Nutgram $bot) {
+$bot->onCallbackQueryData('clear_cart', function (TelegramBot $bot) {
     $user = $bot->get('user');
     $cart = Order::where('user_id', $user->id)->where('status', 'cart')->first();
 
@@ -469,7 +469,7 @@ $bot->onCallbackQueryData('clear_cart', function (Nutgram $bot) {
 });
 
 // Remove single item from cart
-$bot->onCallbackQueryData('remove_item:{itemId}', function (Nutgram $bot, string $itemId) {
+$bot->onCallbackQueryData('remove_item:{itemId}', function (TelegramBot $bot, string $itemId) {
     $user = $bot->get('user');
     $orderItem = OrderItem::where('id', $itemId)
         ->whereHas('order', fn ($q) => $q->where('user_id', $user->id)->where('status', 'cart'))
@@ -494,7 +494,7 @@ $bot->onCallbackQueryData('remove_item:{itemId}', function (Nutgram $bot, string
 });
 
 // Place order
-$bot->onCallbackQueryData('place_order', function (Nutgram $bot) {
+$bot->onCallbackQueryData('place_order', function (TelegramBot $bot) {
     $user = $bot->get('user');
     $cart = Order::where('user_id', $user->id)->where('status', 'cart')->with('items')->first();
 
@@ -527,7 +527,7 @@ $bot->onCallbackQueryData('place_order', function (Nutgram $bot) {
 */
 
 // Back to categories list (callback from inline keyboard)
-$bot->onCallbackQueryData('admin_categories', function (Nutgram $bot) {
+$bot->onCallbackQueryData('admin_categories', function (TelegramBot $bot) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -547,7 +547,7 @@ $bot->onCallbackQueryData('admin_categories', function (Nutgram $bot) {
 });
 
 // Category detail (toggle active, edit items, delete)
-$bot->onCallbackQueryData('admin_cat:{id}', function (Nutgram $bot, string $id) {
+$bot->onCallbackQueryData('admin_cat:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -576,7 +576,7 @@ $bot->onCallbackQueryData('admin_cat:{id}', function (Nutgram $bot, string $id) 
 });
 
 // Toggle category active
-$bot->onCallbackQueryData('admin_togglecat:{id}', function (Nutgram $bot, string $id) {
+$bot->onCallbackQueryData('admin_togglecat:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -606,7 +606,7 @@ $bot->onCallbackQueryData('admin_togglecat:{id}', function (Nutgram $bot, string
 });
 
 // Delete category
-$bot->onCallbackQueryData('admin_delcat:{id}', function (Nutgram $bot, string $id) {
+$bot->onCallbackQueryData('admin_delcat:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -629,7 +629,7 @@ $bot->onCallbackQueryData('admin_delcat:{id}', function (Nutgram $bot, string $i
 });
 
 // Show items in category (admin)
-$bot->onCallbackQueryData('admin_catitems:{id}', function (Nutgram $bot, string $id) {
+$bot->onCallbackQueryData('admin_catitems:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -652,7 +652,7 @@ $bot->onCallbackQueryData('admin_catitems:{id}', function (Nutgram $bot, string 
 });
 
 // Item detail (admin)
-$bot->onCallbackQueryData('admin_item:{id}', function (Nutgram $bot, string $id) {
+$bot->onCallbackQueryData('admin_item:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -682,7 +682,7 @@ $bot->onCallbackQueryData('admin_item:{id}', function (Nutgram $bot, string $id)
 });
 
 // Toggle item active
-$bot->onCallbackQueryData('admin_toggleitem:{id}', function (Nutgram $bot, string $id) {
+$bot->onCallbackQueryData('admin_toggleitem:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -714,7 +714,7 @@ $bot->onCallbackQueryData('admin_toggleitem:{id}', function (Nutgram $bot, strin
 });
 
 // Delete item
-$bot->onCallbackQueryData('admin_delitem:{id}', function (Nutgram $bot, string $id) {
+$bot->onCallbackQueryData('admin_delitem:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -742,7 +742,7 @@ $bot->onCallbackQueryData('admin_delitem:{id}', function (Nutgram $bot, string $
 });
 
 // Add category - ask for name
-$bot->onCallbackQueryData('admin_addcat', function (Nutgram $bot) {
+$bot->onCallbackQueryData('admin_addcat', function (TelegramBot $bot) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -752,7 +752,7 @@ $bot->onCallbackQueryData('admin_addcat', function (Nutgram $bot) {
 });
 
 // Add item - ask for details
-$bot->onCallbackQueryData('admin_additem:{catId}', function (Nutgram $bot, string $catId) {
+$bot->onCallbackQueryData('admin_additem:{catId}', function (TelegramBot $bot, string $catId) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -765,7 +765,7 @@ $bot->onCallbackQueryData('admin_additem:{catId}', function (Nutgram $bot, strin
 });
 
 // Edit category - ask for new name
-$bot->onCallbackQueryData('admin_editcat:{id}', function (Nutgram $bot, string $id) {
+$bot->onCallbackQueryData('admin_editcat:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -778,7 +778,7 @@ $bot->onCallbackQueryData('admin_editcat:{id}', function (Nutgram $bot, string $
 });
 
 // Edit item - ask for new details
-$bot->onCallbackQueryData('admin_edititem:{id}', function (Nutgram $bot, string $id) {
+$bot->onCallbackQueryData('admin_edititem:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
     if (!$user?->is_admin) return;
 
@@ -791,7 +791,7 @@ $bot->onCallbackQueryData('admin_edititem:{id}', function (Nutgram $bot, string 
 });
 
 // Cancel admin action
-$bot->onCommand('cancel', function (Nutgram $bot) {
+$bot->onCommand('cancel', function (TelegramBot $bot) {
     $user = $bot->get('user');
     if ($user && $user->state) {
         $user->update(['state' => null]);
@@ -804,7 +804,7 @@ $bot->onCommand('cancel', function (Nutgram $bot) {
 | Catch-all: back button, admin text input, unknown messages
 |--------------------------------------------------------------------------
 */
-$bot->onMessage(function (Nutgram $bot) {
+$bot->onMessage(function (TelegramBot $bot) {
     $user = $bot->get('user');
     if (!$user) return;
 
@@ -974,7 +974,7 @@ $bot->onMessage(function (Nutgram $bot) {
 |--------------------------------------------------------------------------
 */
 
-function showCategories(Nutgram $bot, ?User $user = null): void
+function showCategories(TelegramBot $bot, ?User $user = null): void
 {
     $categories = Category::where('is_active', true)->orderBy('sort_order')->get();
     $keyboard = InlineKeyboardMarkup::make();
@@ -1005,7 +1005,7 @@ function showCategories(Nutgram $bot, ?User $user = null): void
     );
 }
 
-function showAdminPanel(Nutgram $bot, ?User $user = null): void
+function showAdminPanel(TelegramBot $bot, ?User $user = null): void
 {
     if (!$user) {
         $user = $bot->get('user');
@@ -1016,7 +1016,7 @@ function showAdminPanel(Nutgram $bot, ?User $user = null): void
     );
 }
 
-function notifyAdmins(Nutgram $bot, Order $order, User $customer): void
+function notifyAdmins(TelegramBot $bot, Order $order, User $customer): void
 {
     $admins = User::where('is_admin', true)->get();
 

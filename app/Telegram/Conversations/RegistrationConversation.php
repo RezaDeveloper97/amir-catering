@@ -3,32 +3,31 @@
 namespace App\Telegram\Conversations;
 
 use App\Models\User;
-use SergiX44\Nutgram\Conversations\Conversation;
-use SergiX44\Nutgram\Nutgram;
-use SergiX44\Nutgram\Telegram\Types\Keyboard\KeyboardButton;
-use SergiX44\Nutgram\Telegram\Types\Keyboard\ReplyKeyboardMarkup;
-use SergiX44\Nutgram\Telegram\Types\Keyboard\ReplyKeyboardRemove;
+use App\Telegram\Core\Conversation;
+use App\Telegram\Core\Keyboard\KeyboardButton;
+use App\Telegram\Core\Keyboard\ReplyKeyboardMarkup;
+use App\Telegram\Core\Keyboard\ReplyKeyboardRemove;
 
 class RegistrationConversation extends Conversation
 {
-    public function start(Nutgram $bot): void
+    public function start(): void
     {
-        $user = User::where('telegram_id', $bot->userId())->first();
+        $user = User::where('telegram_id', $this->bot->userId())->first();
 
-        $bot->sendMessage(
+        $this->bot->sendMessage(
             text: trans_user('reg_enter_address', $user),
             reply_markup: ReplyKeyboardRemove::make(remove_keyboard: true),
         );
         $this->next('handleAddress');
     }
 
-    public function handleAddress(Nutgram $bot): void
+    public function handleAddress(): void
     {
-        $address = $bot->message()?->text;
-        $user = User::where('telegram_id', $bot->userId())->first();
+        $address = $this->bot->message()?->text;
+        $user    = User::where('telegram_id', $this->bot->userId())->first();
 
         if (empty($address)) {
-            $bot->sendMessage(trans_user('reg_address_text_only', $user));
+            $this->bot->sendMessage(trans_user('reg_address_text_only', $user));
             $this->next('handleAddress');
             return;
         }
@@ -38,23 +37,23 @@ class RegistrationConversation extends Conversation
         $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true, one_time_keyboard: true)
             ->addRow(KeyboardButton::make(trans_user('btn_send_location', $user), request_location: true));
 
-        $bot->sendMessage(
+        $this->bot->sendMessage(
             text: trans_user('reg_send_location', $user),
             reply_markup: $keyboard,
         );
         $this->next('handleLocation');
     }
 
-    public function handleLocation(Nutgram $bot): void
+    public function handleLocation(): void
     {
-        $location = $bot->message()?->location;
-        $user = User::where('telegram_id', $bot->userId())->first();
+        $location = $this->bot->message()?->location;
+        $user     = User::where('telegram_id', $this->bot->userId())->first();
 
         if ($location === null) {
             $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true, one_time_keyboard: true)
                 ->addRow(KeyboardButton::make(trans_user('btn_send_location', $user), request_location: true));
 
-            $bot->sendMessage(
+            $this->bot->sendMessage(
                 text: trans_user('reg_use_location_button', $user),
                 reply_markup: $keyboard,
             );
@@ -63,30 +62,30 @@ class RegistrationConversation extends Conversation
         }
 
         $user?->update([
-            'latitude' => $location->latitude,
+            'latitude'  => $location->latitude,
             'longitude' => $location->longitude,
         ]);
 
         $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true, one_time_keyboard: true)
             ->addRow(KeyboardButton::make(trans_user('btn_send_phone', $user), request_contact: true));
 
-        $bot->sendMessage(
+        $this->bot->sendMessage(
             text: trans_user('reg_send_phone', $user),
             reply_markup: $keyboard,
         );
         $this->next('handlePhone');
     }
 
-    public function handlePhone(Nutgram $bot): void
+    public function handlePhone(): void
     {
-        $contact = $bot->message()?->contact;
-        $user = User::where('telegram_id', $bot->userId())->first();
+        $contact = $this->bot->message()?->contact;
+        $user    = User::where('telegram_id', $this->bot->userId())->first();
 
         if ($contact === null) {
             $keyboard = ReplyKeyboardMarkup::make(resize_keyboard: true, one_time_keyboard: true)
                 ->addRow(KeyboardButton::make(trans_user('btn_send_phone', $user), request_contact: true));
 
-            $bot->sendMessage(
+            $this->bot->sendMessage(
                 text: trans_user('reg_use_phone_button', $user),
                 reply_markup: $keyboard,
             );
@@ -95,11 +94,11 @@ class RegistrationConversation extends Conversation
         }
 
         $user?->update([
-            'phone' => $contact->phone_number,
+            'phone'         => $contact->phone_number,
             'is_registered' => true,
         ]);
 
-        $bot->sendMessage(
+        $this->bot->sendMessage(
             text: trans_user('reg_complete', $user),
             reply_markup: mainMenuKeyboard($user),
         );

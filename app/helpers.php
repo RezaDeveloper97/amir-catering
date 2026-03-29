@@ -1,8 +1,8 @@
 <?php
 
 use App\Models\User;
-use SergiX44\Nutgram\Telegram\Types\Keyboard\KeyboardButton;
-use SergiX44\Nutgram\Telegram\Types\Keyboard\ReplyKeyboardMarkup;
+use App\Telegram\Core\Keyboard\KeyboardButton;
+use App\Telegram\Core\Keyboard\ReplyKeyboardMarkup;
 
 if (!function_exists('trans_user')) {
     function trans_user(string $key, ?User $user = null, array $replace = []): string

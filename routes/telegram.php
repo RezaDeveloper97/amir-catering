@@ -86,10 +86,16 @@ $bot->onCommand('lang', function (TelegramBot $bot) {
 |--------------------------------------------------------------------------
 */
 $bot->onCallbackQueryData('set_lang:{locale}', function (TelegramBot $bot, string $locale) {
-    if (!in_array($locale, ['fa', 'en', 'ms'])) return;
+    if (!in_array($locale, ['fa', 'en', 'ms'])) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $user = $bot->get('user');
-    if (!$user) return;
+    if (!$user) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $user->update(['language' => $locale]);
     $user->refresh();
@@ -529,7 +535,10 @@ $bot->onCallbackQueryData('place_order', function (TelegramBot $bot) {
 // Back to categories list (callback from inline keyboard)
 $bot->onCallbackQueryData('admin_categories', function (TelegramBot $bot) {
     $user = $bot->get('user');
-    if (!$user?->is_admin) return;
+    if (!$user?->is_admin) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $categories = Category::orderBy('sort_order')->get();
     $keyboard = InlineKeyboardMarkup::make();
@@ -549,7 +558,10 @@ $bot->onCallbackQueryData('admin_categories', function (TelegramBot $bot) {
 // Category detail (toggle active, edit items, delete)
 $bot->onCallbackQueryData('admin_cat:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
-    if (!$user?->is_admin) return;
+    if (!$user?->is_admin) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $cat = Category::withCount('items')->find($id);
     if (!$cat) {
@@ -578,13 +590,19 @@ $bot->onCallbackQueryData('admin_cat:{id}', function (TelegramBot $bot, string $
 // Toggle category active
 $bot->onCallbackQueryData('admin_togglecat:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
-    if (!$user?->is_admin) return;
+    if (!$user?->is_admin) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $cat = Category::find($id);
-    if ($cat) {
-        $cat->update(['is_active' => !$cat->is_active]);
-        $bot->answerCallbackQuery(text: $cat->is_active ? trans_user('activated_toast', $user) : trans_user('deactivated_toast', $user));
+    if (!$cat) {
+        $bot->answerCallbackQuery(text: trans_user('not_found', $user));
+        return;
     }
+
+    $cat->update(['is_active' => !$cat->is_active]);
+    $bot->answerCallbackQuery(text: $cat->is_active ? trans_user('activated_toast', $user) : trans_user('deactivated_toast', $user));
 
     // Refresh the category detail view
     $cat->loadCount('items');
@@ -608,13 +626,19 @@ $bot->onCallbackQueryData('admin_togglecat:{id}', function (TelegramBot $bot, st
 // Delete category
 $bot->onCallbackQueryData('admin_delcat:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
-    if (!$user?->is_admin) return;
+    if (!$user?->is_admin) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $cat = Category::find($id);
-    if ($cat) {
-        $cat->delete();
-        $bot->answerCallbackQuery(text: trans_user('deleted_toast', $user));
+    if (!$cat) {
+        $bot->answerCallbackQuery(text: trans_user('not_found', $user));
+        return;
     }
+
+    $cat->delete();
+    $bot->answerCallbackQuery(text: trans_user('deleted_toast', $user));
 
     // Go back to categories list
     $categories = Category::orderBy('sort_order')->get();
@@ -631,10 +655,16 @@ $bot->onCallbackQueryData('admin_delcat:{id}', function (TelegramBot $bot, strin
 // Show items in category (admin)
 $bot->onCallbackQueryData('admin_catitems:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
-    if (!$user?->is_admin) return;
+    if (!$user?->is_admin) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $cat = Category::with('items')->find($id);
-    if (!$cat) return;
+    if (!$cat) {
+        $bot->answerCallbackQuery(text: trans_user('not_found', $user));
+        return;
+    }
 
     $keyboard = InlineKeyboardMarkup::make();
     foreach ($cat->items as $item) {
@@ -654,10 +684,16 @@ $bot->onCallbackQueryData('admin_catitems:{id}', function (TelegramBot $bot, str
 // Item detail (admin)
 $bot->onCallbackQueryData('admin_item:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
-    if (!$user?->is_admin) return;
+    if (!$user?->is_admin) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $item = MenuItem::with('category')->find($id);
-    if (!$item) return;
+    if (!$item) {
+        $bot->answerCallbackQuery(text: trans_user('not_found', $user));
+        return;
+    }
 
     $status = $item->is_active ? trans_user('status_active', $user) : trans_user('status_inactive', $user);
     $keyboard = InlineKeyboardMarkup::make();
@@ -684,84 +720,105 @@ $bot->onCallbackQueryData('admin_item:{id}', function (TelegramBot $bot, string 
 // Toggle item active
 $bot->onCallbackQueryData('admin_toggleitem:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
-    if (!$user?->is_admin) return;
+    if (!$user?->is_admin) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $item = MenuItem::with('category')->find($id);
-    if ($item) {
-        $item->update(['is_active' => !$item->is_active]);
-        $bot->answerCallbackQuery(text: $item->is_active ? trans_user('activated_toast', $user) : trans_user('deactivated_toast', $user));
-
-        $status = $item->is_active ? trans_user('status_active', $user) : trans_user('status_inactive', $user);
-        $keyboard = InlineKeyboardMarkup::make();
-        $keyboard->addRow(InlineKeyboardButton::make(
-            text: $item->is_active ? trans_user('btn_deactivate', $user) : trans_user('btn_activate', $user),
-            callback_data: "admin_toggleitem:{$item->id}",
-        ));
-        $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_edit_item', $user), callback_data: "admin_edititem:{$item->id}"));
-        $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_delete_item', $user), callback_data: "admin_delitem:{$item->id}"));
-        $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: "admin_catitems:{$item->category_id}"));
-
-        $bot->editMessageText(
-            text: trans_user('item_detail_admin', $user, [
-                'name' => $item->localizedName($user),
-                'price' => number_format($item->price, 2),
-                'category' => $item->category->localizedName($user),
-                'status' => $status,
-            ]),
-            reply_markup: $keyboard,
-        );
+    if (!$item) {
+        $bot->answerCallbackQuery(text: trans_user('not_found', $user));
+        return;
     }
+
+    $item->update(['is_active' => !$item->is_active]);
+    $bot->answerCallbackQuery(text: $item->is_active ? trans_user('activated_toast', $user) : trans_user('deactivated_toast', $user));
+
+    $status = $item->is_active ? trans_user('status_active', $user) : trans_user('status_inactive', $user);
+    $keyboard = InlineKeyboardMarkup::make();
+    $keyboard->addRow(InlineKeyboardButton::make(
+        text: $item->is_active ? trans_user('btn_deactivate', $user) : trans_user('btn_activate', $user),
+        callback_data: "admin_toggleitem:{$item->id}",
+    ));
+    $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_edit_item', $user), callback_data: "admin_edititem:{$item->id}"));
+    $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_delete_item', $user), callback_data: "admin_delitem:{$item->id}"));
+    $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: "admin_catitems:{$item->category_id}"));
+
+    $bot->editMessageText(
+        text: trans_user('item_detail_admin', $user, [
+            'name' => $item->localizedName($user),
+            'price' => number_format($item->price, 2),
+            'category' => $item->category->localizedName($user),
+            'status' => $status,
+        ]),
+        reply_markup: $keyboard,
+    );
 });
 
 // Delete item
 $bot->onCallbackQueryData('admin_delitem:{id}', function (TelegramBot $bot, string $id) {
     $user = $bot->get('user');
-    if (!$user?->is_admin) return;
+    if (!$user?->is_admin) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $item = MenuItem::find($id);
-    if ($item) {
-        $catId = $item->category_id;
-        $item->delete();
-        $bot->answerCallbackQuery(text: trans_user('deleted_toast', $user));
-
-        // Refresh items list
-        $cat = Category::with('items')->find($catId);
-        $keyboard = InlineKeyboardMarkup::make();
-        foreach ($cat->items as $i) {
-            $status = $i->is_active ? '✅' : '❌';
-            $keyboard->addRow(InlineKeyboardButton::make(
-                text: "{$status} {$i->localizedName($user)} - " . number_format($i->price, 2) . " RM",
-                callback_data: "admin_item:{$i->id}",
-            ));
-        }
-        $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_new_item_in', $user, ['name' => $cat->localizedName($user)]), callback_data: "admin_additem:{$cat->id}"));
-        $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: "admin_cat:{$cat->id}"));
-
-        $bot->editMessageText(text: trans_user('items_in_category', $user, ['name' => $cat->localizedName($user)]), reply_markup: $keyboard);
+    if (!$item) {
+        $bot->answerCallbackQuery(text: trans_user('not_found', $user));
+        return;
     }
+
+    $catId = $item->category_id;
+    $item->delete();
+    $bot->answerCallbackQuery(text: trans_user('deleted_toast', $user));
+
+    // Refresh items list
+    $cat = Category::with('items')->find($catId);
+    $keyboard = InlineKeyboardMarkup::make();
+    foreach ($cat->items as $i) {
+        $status = $i->is_active ? '✅' : '❌';
+        $keyboard->addRow(InlineKeyboardButton::make(
+            text: "{$status} {$i->localizedName($user)} - " . number_format($i->price, 2) . " RM",
+            callback_data: "admin_item:{$i->id}",
+        ));
+    }
+    $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_new_item_in', $user, ['name' => $cat->localizedName($user)]), callback_data: "admin_additem:{$cat->id}"));
+    $keyboard->addRow(InlineKeyboardButton::make(text: trans_user('btn_back', $user), callback_data: "admin_cat:{$cat->id}"));
+
+    $bot->editMessageText(text: trans_user('items_in_category', $user, ['name' => $cat->localizedName($user)]), reply_markup: $keyboard);
 });
 
 // Add category - ask for name
 $bot->onCallbackQueryData('admin_addcat', function (TelegramBot $bot) {
     $user = $bot->get('user');
-    if (!$user?->is_admin) return;
+    if (!$user?->is_admin) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
+    $bot->answerCallbackQuery();
     $bot->sendMessage(trans_user('add_category_prompt', $user), parse_mode: 'HTML');
     $user->update(['state' => 'waiting_category_name']);
-    $bot->answerCallbackQuery();
 });
 
 // Add item - ask for details
 $bot->onCallbackQueryData('admin_additem:{catId}', function (TelegramBot $bot, string $catId) {
     $user = $bot->get('user');
-    if (!$user?->is_admin) return;
+    if (!$user?->is_admin) {
+        $bot->answerCallbackQuery();
+        return;
+    }
 
     $cat = Category::find($catId);
-    if (!$cat) return;
+    if (!$cat) {
+        $bot->answerCallbackQuery(text: trans_user('not_found', $user));
+        return;
+    }
 
+    $bot->answerCallbackQuery();
     $bot->sendMessage(trans_user('add_item_prompt', $user), parse_mode: 'HTML');
     $user->update(['state' => "waiting_item_details:{$catId}"]);
-    $bot->answerCallbackQuery();
 });
 
 // Edit category - ask for new name
